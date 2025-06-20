@@ -115,7 +115,7 @@
         const id = params.get('id')
         if(!id){return}
         
-        const result = await startFetching("http://localhost:3000/users/" + id, "GET", null, null)
+        const result = await startFetching("users/" + id, "GET", null, null)
         if(!result.success){return}
 
         let selected = Array.from(document.getElementsByClassName('selected'))
