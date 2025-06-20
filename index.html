@@ -6,12 +6,12 @@
     <title>Main Page</title>
     <link href="./src/output.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-100 max-w-screen min-h-screen flex flex-col">
     <header class="w-full bg-gray-600 text-gray-300 shadow-xl py-4">
-        <ul class="flex justify-evenly items-center w-full h-full text-xl" id="navbar">
-            <li class="selected text-white" onclick="switchContent(event)" id="play-navbar">Play</li>
-            <li class="" onclick="switchContent(event)" id="leaderboard-navbar">Leaderboard</li>
-            <li class="" onclick="switchContent(event)" id="profile-navbar">Profile</li>
+        <ul class="flex justify-evenly items-center w-full h-full text-xl md:text-2xl" id="navbar">
+            <li class="selected text-white cursor-pointer" onclick="switchContent(event)" id="play-navbar">Play</li>
+            <li class="cursor-pointer" onclick="switchContent(event)" id="leaderboard-navbar">Leaderboard</li>
+            <li class="cursor-pointer" onclick="switchContent(event)" id="profile-navbar">Profile</li>
         </ul>
     </header>
 
@@ -19,7 +19,7 @@
         
         <section class="selected flex flex-col flex-1 items-center" id="play">
             <div class="flex w-full justify-center items-center">
-                <div class="max-w-full px-5 rounded-2xl text-md text-2xl top-0 bg-white shadow-md flex items-center py-2 gap-2 justify-center">
+                <div class="max-w-full mt-2 px-5 rounded-2xl text-md text-2xl top-0 bg-white shadow-md flex items-center py-2 gap-2 justify-center">
                     <h2>Score: </h2>
                     <h2 class="" id="scoreNumber">0</h2>
                 </div>
@@ -31,22 +31,22 @@
                 <h1 class="text-2xl sm:text-3xl ">Cari Arti Dari Kata:</h1>
                 <h2 class="text-3xl sm:text-4xl font-bold my-1 sm:my-4" id="word">Example</h2>
                 <ul class="mt-8 sm:mt-10 flex flex-col items-center justify-center gap-1 text-white text-sm sm:text-xl" id="answer">
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl " onclick="showAnswer(event)">this is answer number 1</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl " onclick="showAnswer(event)">this is answer number 2</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl " onclick="showAnswer(event)" >this is answer number 3</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl " onclick="showAnswer(event)" >this is answer number 3</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl " onclick="showAnswer(event)" >this is answer number 3</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer" onclick="showAnswer(event)">this is answer number 1</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer" onclick="showAnswer(event)">this is answer number 2</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer" onclick="showAnswer(event)" >this is answer number 3</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer" onclick="showAnswer(event)" >this is answer number 3</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer" onclick="showAnswer(event)" >this is answer number 3</button></li>
                 </ul>
                 </div>
             </div>
         </section>
         
         <section class="hidden flex-1 flex justify-center text-black" id="leaderboard">
-            <div class=" w-[90%] p-2 max-h-[90%] flex flex-col gap-1" id="leaderboard-container">
-                <div class="hidden text-md bg-white rounded-xl p-1 border-1 border-gray-600 box-border" id="user-node">
-                    <ul class="flex justify-between">
+            <div class=" w-[90%] p-2 max-h-[90%] md:w-[60%] flex flex-col gap-1" id="leaderboard-container">
+                <div class="hidden cursor-pointer text-md md:text-2xl bg-white rounded-xl p-1 border-1 border-gray-600 box-border" id="user-node">
+                    <ul class="flex gap-2 justify-between">
                         <li class="">1</li>
-                        <li class="">ark</li>
+                        <li class="overflow-hidden">ark</li>
                         <li>40000</li>
                     </ul>
                 </div>
@@ -54,8 +54,17 @@
         </section>
         
         <section class="hidden flex-1 flex flex-col justify-center items-center text-black" id="profile">
-            <h2 class="bg-white px-2 py-1 rounded-xl" id="my-profile-btn" onclick="setMyProfile()">back</h2>
-            <div class="w-[80%] p-4 text-md rounded-xl border-1 border-gray-300 bg-white shadow-lg my-auto flex flex-col md:flex-row">
+            <button class="mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile()">back</button>
+            <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="loggingOut()">Log out</button>
+            <div class="hidden mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
+                <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
+                    <a class="py-1 px-5 " href="./login.html">Login</a>
+                </div>
+                <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
+                    <a class="py-1 px-5" href="./signup.html">Register</a>
+                </div>
+            </div>
+            <div class="w-[280px] sm:w-[500px] md:w-[600px] lg:w-[800px] overflow-hidden p-4 text-md rounded-xl border-1 border-gray-300 bg-white shadow-lg my-auto flex flex-col md:flex-row md:gap-4">
                 <div class="flex-1 flex justify-center items-center my-3">
                     <div class="bg-gray-700 w-[120px] h-[120px] rounded-full flex items-center justify-center text-gray-200">
                         <h2 class="text-5xl" id="profile-score">waiting...</h2>
@@ -63,16 +72,8 @@
                 </div>
 
                 <div class="flex-2 flex flex-col justify-center">
-                    <h1 class="text-2xl md:text-6xl mb-2 text-center font-bold" id="profile-username">waiting...</h1>
-                    <h3 class=" text-sm md:text-xl text-center" id="profile-email">waiting...</h3>
-                </div>
-                <div class="hidden flex gap-4" id="sign-options">
-                    <div class="flex-1 bg-gray-200 shadow-md rounded-2xl flex justify-center items-center">
-                        <a href="./login.html">Login</a>
-                    </div>
-                    <div class="flex-1 bg-gray-200 shadow-md rounded-2xl flex justify-center items-center">
-                        <a href="./signup.html">Register</a>
-                    </div>
+                    <h1 class=" text-2xl md:py-3 md:text-6xl mb-2 text-center md:text-left font-bold overflow-hidden" id="profile-username">waiting...</h1>
+                    <h3 class=" text-sm md:text-xl text-center md:text-left overflow-hidden" id="profile-email">waiting...</h3>
                 </div>
             </div>
         </section>
@@ -88,14 +89,27 @@
     const profileEmail = document.getElementById("profile-email")
     const profileScore = document.getElementById("profile-score")
     const myProfileBtn = document.getElementById("my-profile-btn")
+    const logOutBtn = document.getElementById("logout-btn")
     
     let username, email, score
     
+    function loggingOut(){
+        localStorage.removeItem("token")
+        localStorage.removeItem("score")
+        window.location.href = "./login.html"
+    }
+
     function setMyProfile(){
+        myProfileBtn.classList.add("hidden")
+
+        const url = new URL(window.location)
+        url.search = ""
+        window.history.replaceState({}, "", url)
         if(!username || !email){
             profileUsername.innerHTML = "~~~~~~~"
             profileEmail.innerHTML = "~~~~~~~~~~~~~~~~~~~~~"
             profileScore.innerHTML = 403
+            document.getElementById("sign-options").classList.remove("hidden")
             return
         }
         
@@ -103,21 +117,27 @@
         profileEmail.innerHTML = email
         profileScore.innerHTML = score
 
-        myProfileBtn.classList.add("hidden")
-        
-        const url = new URL(window.location)
-        url.search = ""
-        window.history.replaceState({}, "", url)
+        logOutBtn.classList.remove("hidden")
     }
 
     async function setProfileByParam(){
+        
         const params = new URLSearchParams(window.location.search)
         const id = params.get('id')
-        if(!id){return}
+        if(!id){
+            return
+        }
         
         const result = await startFetching("users/" + id, "GET", null, null)
-        if(!result.success){return}
-
+        if(!result.success){
+            return
+        }
+        
+        
+        profileUsername.innerHTML = result.data.username
+        profileEmail.innerHTML = result.data.email
+        profileScore.innerHTML = result.data.score
+        
         let selected = Array.from(document.getElementsByClassName('selected'))
         selected[0].classList.remove('selected', 'text-white')
         selected[1].classList.remove('selected')
@@ -127,14 +147,13 @@
         sections[2].classList.remove('hidden')
         sections[2].classList.add('selected')
 
-        profileUsername.innerHTML = result.data.username
-        profileEmail.innerHTML = result.data.email
-        profileScore.innerHTML = result.data.score
-
+        document.getElementById("sign-options").classList.add("hidden")
         myProfileBtn.classList.remove("hidden")
+        logOutBtn.classList.add("hidden")
+        return 
     }
-
-
+    
+    
     /////////////////////////////////////////////
     const leaderboardContainer = document.getElementById("leaderboard-container")
     const userNode = document.getElementById("user-node")
@@ -187,12 +206,7 @@
     const word = document.getElementById('word')
     const warningText = document.getElementById("warning-text")
     const scoreNumber = document.getElementById('scoreNumber')
-    if(!localStorage.getItem('score')){
-        localStorage.setItem('score', 0)
-        scoreNumber.innerHTML = 0
-    } else {
-        getScore()
-    }
+    getScore()
     setProfileByParam()
     const answerLists = Array.from(document.getElementById('answer').children)
     
@@ -236,11 +250,11 @@
         warningText.innerHTML = result.message
         changeWarningClass(["text-red-600"], "text-blue-600")
         if(!result.success){
+            localStorage.setItem("score", 0)
+            scoreNumber.innerHTML = 0
+
             changeWarningClass(["text-blue-600"], "text-red-600")
-            document.getElementById("sign-options").classList.remove("hidden")
-            profileUsername.innerHTML = "~~~~~~~"
-            profileEmail.innerHTML = "~~~~~~~~~~~~~~~~~~~~~"
-            profileScore.innerHTML = 403
+            setMyProfile()
             setLeaderboard()
             return
         }

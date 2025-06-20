@@ -11,8 +11,8 @@
         <h1 class="text-3xl text-center">Create Account</h1>
         <form class="flex flex-col justify-center mt-8 w-full" action="/signup" method="POST">
             <div class="flex flex-col gap-2 h-38">
-                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="text" id="username" placeholder="username">
-                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="email" id="email" placeholder="email" >
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="text" id="username" placeholder="username" oninput="checkInputLength()">
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="email" id="email" placeholder="email" oninput="checkInputLength()">
                 <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="password" placeholder="password" oninput="checkConfirmPassword()" >
                 <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="confirm-password" placeholder="confirm password" oninput="checkConfirmPassword()">
                 <p class="hidden text-xs text-red-600 mb-3 max-w-full" id="errorMessage"></p>
@@ -21,7 +21,7 @@
                 Already have an account?
                 <a class="text-[blue] hover:font-bold" href="./login.html">login</a>
             </p>
-            <input class="border-1 rounded-md pl-1 w-20 mx-auto mt-10 bg-green-500 hover:bg-green-600" type="submit" value="submit">
+            <input class="border-1 rounded-md pl-1 w-20 mx-auto mt-10 bg-green-500 hover:bg-green-600 cursor-pointer" type="submit" value="submit">
         </form>
     </div>
 
@@ -60,6 +60,15 @@
                 window.location.href = './login.html'
             }, 2000)
         })
+
+        function checkInputLength() {
+            if(!(usernameInput.value.length > 15) && !(emailInput.value.length > 25)){
+                errorMessage.classList.add('hidden')
+                return false
+            } if(usernameInput.value.length > 15){showMessageError("max username length is 15")}
+            showMessageError("max email length is 25")
+
+        }
 
         function checkConfirmPassword(){
             if(!confirmPassword.value){return false}
