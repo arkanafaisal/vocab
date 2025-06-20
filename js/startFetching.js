@@ -1,4 +1,4 @@
-async function startFetching(api, method, token, body) {
+async function startFetching(endpoint, method, token, body) {
         try {
             let options = {
                 method: method,
@@ -10,7 +10,7 @@ async function startFetching(api, method, token, body) {
             if(token){options.headers.token = token}
             if(body){options.body = JSON.stringify(body)}
 
-            const response = await fetch(api, options)
+            const response = await fetch("https://vocab-server.glitch.me/" + endpoint, options)
 
 
             const result = await response.json()
