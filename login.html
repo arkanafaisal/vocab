@@ -35,7 +35,7 @@
                 username: usernameInput.value,
                 password: passwordInput.value
             }
-            const result = await startFetching("http://localhost:3000/auth/login", "POST", null, data)
+            const result = await startFetching("auth/login", "POST", null, data)
             showMessageError(result.message)
             
             if(!result.success){return}
