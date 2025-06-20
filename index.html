@@ -172,7 +172,7 @@
     }
     
     async function getAllUsers() {
-        const result = await startFetching("http://localhost:3000/users/", "GET", null, null)
+        const result = await startFetching("users/", "GET", null, null)
         console.log(result.message)
         if(!result.success){return }
 
@@ -209,7 +209,7 @@
         const body = {
             score: parseInt(localStorage.getItem("score"))
         }
-        const result = await startFetching("http://localhost:3000/profile/changeData", "PUT", localStorage.getItem("token"), body)
+        const result = await startFetching("profile/changeData", "PUT", localStorage.getItem("token"), body)
 
 
         warningText.innerHTML = result.message
@@ -232,7 +232,7 @@
         const body = {
             score: parseInt(localStorage.getItem("score"))
         }
-        const result = await startFetching('http://localhost:3000/profile/get', 'POST', localStorage.getItem("token"),  body)
+        const result = await startFetching('profile/get', 'POST', localStorage.getItem("token"),  body)
         warningText.innerHTML = result.message
         changeWarningClass(["text-red-600"], "text-blue-600")
         if(!result.success){
@@ -264,7 +264,7 @@
         const dataLength = 20
         let result
         console.log("requesting new data...")
-        result = await startFetching('http://localhost:3000/data/get/' + dataLength, 'GET')
+        result = await startFetching('data/get/' + dataLength, 'GET')
         
 
         if(!result.success){
