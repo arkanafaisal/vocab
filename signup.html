@@ -49,7 +49,7 @@
                 password: passwordInput.value
             }
 
-            const result = await startFetching("http://localhost:3000/auth/register", "POST", null, data)
+            const result = await startFetching("auth/register", "POST", null, data)
             showMessageError(result.message)
             if(!result.success){return}
 
