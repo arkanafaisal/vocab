@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link href="./src/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-200 max-w-screen h-screen min-h-screen overflow-hidden flex flex-col">
+    <header class="w-full sticky bg-gray-900 text-gray-400 shadow-md py-4">
+        <ul class="flex justify-evenly items-center w-full h-full text-xl md:text-2xl" id="navbar">
+            <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="play-navbar">Play</li>
+            <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="leaderboard-navbar">Leaderboard</li>
+            <li class="selected text-white cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="profile-navbar">Profile</li>
+        </ul>
+    </header>
+
+    <main class="flex flex-1 overflow-hidden">
+
+        <section class="hidden flex flex-col flex-1 items-center" id="play">
+            <div class="flex relative w-full justify-center items-center">
+                <div class="max-w-full mt-2 px-5 rounded-2xl text-md text-2xl top-0 bg-white shadow-md flex items-center py-2 gap-2 justify-center">
+                    <h2>Score: </h2>
+                    <h2 class="" id="scoreNumber">0</h2>
+                </div>
+            </div>
+            <p class="text-sm text-red-600" id="warning-text">waking up server...</p>
+
+            <div class="flex-1 w-full flex justify-center items-center">
+                <div class="max-w-[80%]  box-border border border-gray-300 rounded-2xl px-5 py-6 bg-white text-gray-900 flex flex-col items-center shadow-lg" id="container">
+                <h1 class="text-2xl sm:text-3xl ">Cari Arti Dari Kata:</h1>
+                <h2 class="text-3xl sm:text-4xl font-bold my-1 sm:my-4" id="word">Example</h2>
+                <ul class="mt-8 sm:mt-10 flex flex-col items-center justify-center gap-1 text-white text-md sm:text-xl" id="answer">
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)">this is answer number 1</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)">this is answer number 2</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
+                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
+                </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="hidden flex-1 text-center flex flex-col items-center text-black" id="leaderboard">
+            <div class="text-xl mt-2 mb-1 w-[90%] md:w-[60%] md:text-2xl bg-gray-700 text-gray-100 rounded-lg py-1 px-2 border-1 border-gray-600 box-border">
+                <ul class="flex gap-2 justify-between">
+                    <li class="flex-5">rank</li>
+                    <li class="flex-19">username</li>
+                    <li class="flex-8">score</li>
+                </ul>
+            </div>
+            <div class="px-2 overflow-auto w-[90%] h-[90%] max-h-[90%] md:w-[60%] md:px-4 flex flex-col gap-1" id="leaderboard-container">
+                <div class="hidden cursor-pointer text-md md:text-2xl bg-white rounded-xl p-1 border-1 border-gray-600 box-border" id="user-node">
+                    <ul class="flex gap-2 justify-between">
+                        <li class="flex-2">1</li>
+                        <li class="flex-10 overflow-hidden">ark</li>
+                        <li class="flex-3">40000</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section class="selected flex-1 flex flex-col justify-center items-center text-black" id="profile">
+            <button class="mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile(true)">back</button>
+            <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="loggingOut()">Log out</button>
+            <div class="hidden mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
+                <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
+                    <a class="py-1 px-5 " href="./login.html">Login</a>
+                </div>
+                <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
+                    <a class="py-1 px-5" href="./signup.html">Register</a>
+                </div>
+            </div>
+            <div class="w-[280px] sm:w-[500px] md:w-[600px] lg:w-[800px] overflow-hidden p-4 text-md rounded-xl border-1 border-gray-300 bg-white shadow-lg my-auto flex flex-col md:flex-row md:gap-4">
+                <div class="flex-1 flex justify-center items-center my-3">
+                    <div class="bg-gray-900 w-[120px] h-[120px] rounded-full flex items-center justify-center text-gray-100">
+                        <h2 class="text-5xl" id="profile-score">-1</h2>
+                    </div>
+                </div>
+
+                <div class="flex-2 flex flex-col justify-center">
+                    <h1 class=" text-2xl md:py-3 md:text-6xl mb-2 text-center md:text-left font-bold overflow-hidden" id="profile-username">~~~~~~~</h1>
+                    <h3 class=" text-sm md:text-xl text-center md:text-left overflow-hidden" id="profile-email">~~~~~~~~~~~~~~~~~~~~~</h3>
+                </div>
+            </div>
+        </section>
+    </main>
+
+<script src="./js/startFetching.js"></script>
+<script>
+    const navbar = Array.from(document.getElementById('navbar').children)
+    const sections = Array.from(document.querySelector('main').children)
+
+    /////////////////////////////////////////////
+    const profileUsername = document.getElementById("profile-username")
+    const profileEmail = document.getElementById("profile-email")
+    const profileScore = document.getElementById("profile-score")
+    const myProfileBtn = document.getElementById("my-profile-btn")
+    const signOptions = document.getElementById("sign-options")
+    const logOutBtn = document.getElementById("logout-btn")
+
+    let username, email, score
+
+    
+    
+    /////////////////////////////////////////////
+    const leaderboardContainer = document.getElementById("leaderboard-container")
+    const userNode = document.getElementById("user-node")
+
+    
+    
+    
+    /////////////////////////////////////////////
+    const word = document.getElementById('word')
+    const warningText = document.getElementById("warning-text")
+    const scoreNumber = document.getElementById('scoreNumber')
+    const answerLists = Array.from(document.getElementById('answer').children)
+    
+    let randomData = []
+    let randomMeaning = []
+    let answered
+    let stopUpdating = false
+    
+    mainFunction()
+    async function mainFunction(){
+        if(isServerAwake){
+            getScore()
+            setProfileByParam()
+            refreshQuiz()
+            return
+        }
+        setTimeout(mainFunction, 2000)
+    }
+    
+    
+    
+
+
+
+    
+
+    
+
+    
+
+
+    
+
+    
+
+    
+    
+
+
+
+
+
+    
+    
+
+
+
+
+
+
+
+    
+
+
+
+    
+
+
+
+    
+    function loggingOut(){
+        localStorage.removeItem("token")
+        localStorage.removeItem("score")
+        window.location.href = "./login.html"
+    }
+
+    function setMyProfile(isFromClicking){
+        myProfileBtn.classList.add("hidden")
+        signOptions.classList.remove("hidden")
+
+        if(isFromClicking){
+            const url = new URL(window.location)
+            url.search = ""
+            window.history.replaceState({}, "", url)
+        }
+        if(!username || !email){
+            profileUsername.innerHTML = "~~~~~~~"
+            profileEmail.innerHTML = "~~~~~~~~~~~~~~~~~~~~~"
+            profileScore.innerHTML = "-1"
+            return
+        }
+
+        profileUsername.innerHTML = username
+        profileEmail.innerHTML = email
+        profileScore.innerHTML = score
+
+        signOptions.classList.add("hidden")
+        logOutBtn.classList.remove("hidden")
+    }
+
+    async function setProfileByParam(){
+
+        const params = new URLSearchParams(window.location.search)
+        const id = params.get('id')
+        if(!id){
+            setMyProfile()
+            return
+        }
+        const result = await startFetching("users/" + id, "GET", null, null)
+        if(!result.success){
+            setMyProfile()
+            return
+        }
+
+
+        profileUsername.innerHTML = result.data.username
+        profileEmail.innerHTML = result.data.email
+        profileScore.innerHTML = result.data.score
+
+        switchContent(null, 2)
+
+        myProfileBtn.classList.remove("hidden")
+        signOptions.classList.add("hidden")
+        logOutBtn.classList.add("hidden")
+        return 
+    }
+    
+    async function setLeaderboard() {
+        let allUSers = await getAllUsers()
+        allUSers.sort((a,b)=>b.score - a.score)
+
+        for(let i = 0; i< allUSers.length; i++){
+            let duplicate = userNode.cloneNode(true)
+            duplicate.classList.remove("hidden")
+            duplicate.id = allUSers[i]._id
+
+            let list = duplicate.children[0].children
+            list[0].innerHTML = i+1 
+            list[1].innerHTML = allUSers[i].username
+            list[2].innerHTML = allUSers[i].score
+
+            if(allUSers[i].username === username){
+                changeClass(duplicate, ["bg-white"], ["bg-blue-300"])
+            }
+
+            duplicate.addEventListener("click", event => {
+                const url = new URL(window.location)
+                url.searchParams.set("id", event.currentTarget.id)
+                window.history.replaceState({}, "", url)
+                setProfileByParam()
+            })
+
+            leaderboardContainer.appendChild(duplicate)
+        }
+    }
+
+    async function getAllUsers() {
+        const result = await startFetching("users/", "GET", null, null)
+        console.log(result.message)
+        if(!result.success){return }
+
+        return result.data
+
+    }
+
+    async function updateScore() {
+    
+    
+        const body = {
+            score: parseInt(localStorage.getItem("score"))
+        }
+        const result = await startFetching("profile/changeData", "PUT", localStorage.getItem("token"), body)
+
+
+        warningText.innerHTML = result.message
+        changeClass(warningText, ["text-gray-200", "text-red-600"], ["text-blue-600"])
+        if(!result.success){
+            changeClass(warningText, ["text-gray-200", "text-blue-600"], ["text-red-600"])
+            return
+        }
+        localStorage.setItem("score",result.data)
+        score = result.data
+        setMyProfile()
+
+        setTimeout(()=>{
+            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-200"])
+        }, 3000)
+    }
+
+    async function getScore() {
+        const body = {
+            score: parseInt(localStorage.getItem("score"))
+        }
+        const result = await startFetching('profile/get', 'POST', localStorage.getItem("token"),  body)
+        warningText.innerHTML = result.message
+        changeClass(warningText, ["text-red-600"], ["text-blue-600"])
+
+        if(!result.success){
+            localStorage.setItem("score", 0)
+            scoreNumber.innerHTML = 0
+
+            changeClass(warningText, ["text-blue-600"], ["text-red-600"])
+            setLeaderboard()
+            return
+        }
+        
+        localStorage.setItem("score", result.data.score)
+        scoreNumber.innerHTML = result.data.score
+
+        username = result.data.username
+        email = result.data.email
+        score = result.data.score
+        setLeaderboard()
+        switchContent(null, 0)
+        setMyProfile()
+
+        setTimeout(()=>{
+            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-200"])
+        }, 3000)    
+        return
+    }
+
+    async function refreshData() {
+        if(randomData.length > 0){return true}
+        const dataLength = 20
+        let result
+        console.log("requesting new data...")
+        result = await startFetching('data/get/' + dataLength, 'GET')
+
+
+        if(!result.success){
+            console.log('failed to get data')
+        } else {
+            console.log('successfully getting data')
+
+            randomData = result.data[0].map(value => {
+                return {
+                    vocab: JSON.stringify(value.vocab),
+                    meaning: value.meaning
+                }
+            })
+            randomMeaning = result.data[1]
+            
+        }
+    }
+
+    async function refreshQuiz() {
+            if(randomData.length === 0){await refreshData()}
+            word.innerHTML = randomData[0].vocab.toString()
+            answerLists.forEach((answerList)=> {
+                const randomIndex = Math.floor(Math.random()*randomMeaning.length)
+                answerList.children[0].innerHTML = randomMeaning[randomIndex]
+            })
+            answerLists[Math.floor(Math.random()*answerLists.length)].children[0].innerHTML = randomData[0].meaning
+    
+        }
+
+    function showAnswer(event) {
+        if(answered){return}
+        answered = true
+        let answerTransition
+        answerLists.forEach(answerList => {
+            setTimeout(()=>{
+                answerList.children[0].classList.add("bg-white")
+            }, 2500)
+            if(answerList.children[0].innerHTML === randomData[0].meaning){
+                answerList.children[0].classList.remove('bg-white')
+                answerList.children[0].classList.add('bg-green-500')
+                return
+            } else if(answerList.children[0] === event.target){
+                changeClass(event.target, [], ["bg-red-500"])
+                return
+            }
+            answerList.children[0].classList.remove('bg-blue-500')
+            answerList.children[0].classList.add('bg-white')
+        })
+
+        if(event.target.innerHTML === randomData[0].meaning){
+            localStorage.setItem('score', parseInt(localStorage.getItem('score')) + 1 )
+            updateScore()
+            scoreNumber.innerHTML = parseInt(localStorage.getItem('score'))
+        }
+
+        setTimeout(() => {
+            answerLists.forEach(answerList => {
+                answerList.children[0].classList.remove('bg-green-500', 'bg-red-500', 'bg-white')
+                answerList.children[0].classList.add('bg-blue-500')
+            })
+            randomData.shift()
+            refreshQuiz() .then(()=>{
+                answered = false
+            })
+
+        }, 3000)
+    }
+
+    function switchContent(event, index){
+        let selected = Array.from(document.getElementsByClassName('selected'))
+        if(typeof index === "number"){
+            changeClass(selected[0], ["selected", "text-white"], [])
+            changeClass(selected[1], ["selected"], ["hidden"])
+
+            console.log("changing selected to ", index)
+            changeClass(navbar[index], [], ["selected", "text-white"])
+            changeClass(sections[index], ["hidden"], ["selected"])
+        } else {
+            navbar.forEach((val, index) => {
+                if(event.target == val){
+                    changeClass(selected[0], ["selected", "text-white"], [])
+                    changeClass(selected[1], ["selected"], ["hidden"])
+
+                    event.target.classList.add('selected', 'text-white')
+                    changeClass(sections[index], ["hidden"], ["selected"])
+                }
+            })
+        }
+    }
+    
+    function changeClass(element, removed, added){
+    element.classList.remove(...removed)
+    element.classList.add(...added)
+}
+    
+    function xorEncrypt(text, key) {
+        return [...text].map((char, i) =>
+            String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))
+        ).join('')
+    }
+
+    function xorDecrypt(cipher, key) {
+        return xorEncrypt(cipher, key)
+    }
+</script>
+</body>
+</html>

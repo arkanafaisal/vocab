@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign-Up</title>
+    <link href="./src/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-300 max-w-full h-screen flex items-center justify-center">
+    <div class="bg-white px-5 py-4 rounded-lg shadow-lg" id="container">
+        <h1 class="text-3xl text-center">Create Account</h1>
+        <form class="flex flex-col justify-center mt-8 w-full" action="/signup" method="POST">
+            <div class="flex flex-col gap-2 h-38">
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="text" id="username" placeholder="username" oninput="checkInputLength()">
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="email" id="email" placeholder="email" oninput="checkInputLength()">
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="password" placeholder="password" oninput="checkConfirmPassword()" >
+                <input class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="confirm-password" placeholder="confirm password" oninput="checkConfirmPassword()">
+                <p class="hidden text-xs text-red-600 mb-3 max-w-full" id="errorMessage"></p>
+            </div>
+            <p class="text-xs">
+                Already have an account?
+                <a class="text-[blue] hover:font-bold" href="./login.html">login</a>
+            </p>
+            <input class="border-1 rounded-md pl-1 w-20 mx-auto mt-10 bg-green-500 hover:bg-green-600 cursor-pointer" type="submit" value="submit">
+        </form>
+    </div>
+
+    <script src="./js/startFetching.js"></script>
+    <script>
+        const myForm = document.querySelector('form')
+        const usernameInput = document.getElementById('username')
+        const emailInput = document.getElementById('email')
+        const passwordInput = document.getElementById('password')
+        const confirmPassword = document.getElementById('confirm-password')
+        const errorMessage = document.getElementById('errorMessage')
+
+
+
+        myForm.addEventListener('submit', async event => {
+            event.preventDefault()
+            if(!checkConfirmPassword()){
+                showMessageError("please fill all the form")
+                return
+            }
+            
+            const data = {
+                username: usernameInput.value,
+                email: emailInput.value,
+                password: passwordInput.value
+            }
+
+            const result = await startFetching("auth/register", "POST", null, data)
+            showMessageError(result.message)
+            if(!result.success){return}
+
+            errorMessage.classList.remove("text-red-600")
+            errorMessage.classList.add("text-blue-600")
+            //errorMessage.classList.add('hidden')
+            setTimeout(()=>{
+                window.location.href = './login.html'
+            }, 2000)
+        })
+
+        function checkInputLength() {
+            if(!(usernameInput.value.length > 15) && !(emailInput.value.length > 25)){
+                errorMessage.classList.add('hidden')
+                return false
+            } if(usernameInput.value.length > 15){showMessageError("max username length is 15")}
+            showMessageError("max email length is 25")
+
+        }
+
+        function checkConfirmPassword(){
+            if(!confirmPassword.value){return false}
+            if(passwordInput.value === confirmPassword.value){
+                errorMessage.classList.add('hidden')
+                return true
+            }
+            
+            showMessageError("password doesn't match")
+            return false
+        }
+        function showMessageError(message){
+            errorMessage.classList.remove('hidden')
+            errorMessage.innerHTML = message
+        }
+        // async function startFetching (data){
+        //     let response
+        //     try {
+        //         response = await fetch('http://localhost:3000/auth/register',{
+        //         method: 'POST',
+        //         credentials: 'include',
+        //         headers: {
+        //             'Content-Type': 'application/json'
+        //         },
+        //         body: JSON.stringify(data)
+        //     })
+        //     } catch(error) {
+        //         console.error(error)
+        //     }
+        //     const result = await response.json()
+        //     return result
+        // }
+    </script>
+</body>
+</html>
