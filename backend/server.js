@@ -10,6 +10,7 @@ import  usersRouter from './routes/usersRouter.js'
 import profileRouter from './routes/profileRouter.js';
 import dataRouter from './routes/dataRouter.js';
 import cors from 'cors'
+import cookieParser from 'cookie-parser';
 
 await connectDb()
 
@@ -17,6 +18,7 @@ const app = express();
 const PORT = process.env.PORT || 3000
 
 app.use(express.json())
+app.use(cookieParser())
 app.use(cors({
   origin: 'http://127.0.0.1:5500' , // GANTI ke frontend kamu
   credentials: true                // wajib kalau pakai cookie

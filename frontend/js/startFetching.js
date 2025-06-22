@@ -8,6 +8,9 @@ setInterval(()=>{
     }
 }, 5000)
 
+const developmentUrl = "http://localhost:3000/"
+const productionUrl = "https://vocab-server.glitch.me/"
+const url = developmentUrl
 async function startFetching(endpoint, method, token, body) {
     if(!isServerAwake){
         return {success: false, message: "server masih tidur", data: null}
@@ -20,10 +23,10 @@ async function startFetching(endpoint, method, token, body) {
                 'Content-type': 'application/json'
             }
         }
-        if(token){options.headers.token = token}
+        if(token){options.headers.Authorization = "Bearer " + token}
         if(body){options.body = JSON.stringify(body)}
 
-        const response = await fetch("https://vocab-server.glitch.me/" + endpoint, options)
+        const response = await fetch(url + endpoint, options)
 
         
         const result = await response.json()
@@ -37,7 +40,7 @@ async function startFetching(endpoint, method, token, body) {
 async function checkServerState() {
     if(isServerAwake){return}
     try{
-        const response = await fetch("https://vocab-server.glitch.me/check")
+        const response = await fetch(url + "check")
         isServerAwake = true
         console.log("the server is awake")
         loading = false

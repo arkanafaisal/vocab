@@ -41,15 +41,18 @@ authController.login = async (req, res) => {
     if(!matchPassword){return response(404, false, "username or password incorrect", null, res)}
 
     const payload = {id: findUser._id, username: findUser.username, score: findUser.score}
-    const token = 'Bearer ' + jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"20m"})
+    const token = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"1m"})
 
-    // res.cookie('token', token, {
-    //     httpOnly: false,    // Supaya aman (tidak bisa dibaca JS)
-    //     sameSite: 'Lax',   // Boleh lintas halaman
-    //     path: '/',         // Berlaku untuk semua path
-    //     secure: false,   // Hanya untuk HTTPS (aktif jika pakai ngrok)
-    //     maxAge: 24 * 60 * 60 * 1000
-    // });
+    if(!req.cookies.refreshToken){
+        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"20m"})
+        res.cookie('token', token, {
+            httpOnly: true,    // Supaya aman (tidak bisa dibaca JS)
+            sameSite: 'Lax',   // Boleh lintas halaman
+            path: '/',         // Berlaku untuk semua path
+            secure: true,   // Hanya untuk HTTPS (aktif jika pakai ngrok)
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+    }
     return response(200, true, "login successfull", {user: payload, token: token}, res)
 }
 
@@ -57,9 +60,19 @@ authController.logout = async (req, res) => {
     console.log('logout endpoint hit')
 }
 
-
-
-// //userId 684d29dbf04c80610c017d4a
+authController.refreshToken = async (req, res) => {
+    console.log("getting new access token")
+    try {
+        const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
+        
+        const newToken = jwt.sign(decoded, process.env.JWT_SECRETKEY, {expiresIn:"20m"})
+        return response(200, true, "new token created", newToken, res)
+    } catch(err){
+        if(err.name === "TokenExpiredError"){return response(403, false, "refresh token expired", null, res)}
+        if(err.name === "JsonWebTokenError"){return response(403, false, "refresh token invalid", null, res)}
+        return response(403, false, "error when verifying token", null, res)
+    }
+}
 
 
 export default authController

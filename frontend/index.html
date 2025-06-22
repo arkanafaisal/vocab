@@ -61,7 +61,7 @@
         </section>
 
         <section class="selected flex-1 flex flex-col justify-center items-center text-black" id="profile">
-            <button class="mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile(true)">back</button>
+            <button class="hidden mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile(true)">back</button>
             <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="loggingOut()">Log out</button>
             <div class="hidden mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
                 <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
@@ -301,10 +301,21 @@
         changeClass(warningText, ["text-red-600"], ["text-blue-600"])
 
         if(!result.success){
+            changeClass(warningText, ["text-blue-600"], ["text-red-600"])
             localStorage.setItem("score", 0)
             scoreNumber.innerHTML = 0
 
-            changeClass(warningText, ["text-blue-600"], ["text-red-600"])
+            if(result.message === "token expired"){
+                const result2 = await startFetching("auth/refresh", "POST", null, null)
+                if(!result2.success){
+                    setTimeout(getScore, 5000)
+                    return
+                }
+                localStorage.setItem('token', result2.data)
+                getScore()
+                return
+            }
+
             setLeaderboard()
             return
         }
@@ -341,7 +352,7 @@
             randomData = result.data[0].map(value => {
                 return {
                     vocab: JSON.stringify(value.vocab),
-                    meaning: value.meaning
+                    meaning: xorEncrypt(value.meaning, "arkanmakanikan")
                 }
             })
             randomMeaning = result.data[1]
@@ -356,7 +367,8 @@
                 const randomIndex = Math.floor(Math.random()*randomMeaning.length)
                 answerList.children[0].innerHTML = randomMeaning[randomIndex]
             })
-            answerLists[Math.floor(Math.random()*answerLists.length)].children[0].innerHTML = randomData[0].meaning
+            const randomIndex = Math.floor(Math.random()*answerLists.length)
+            answerLists[randomIndex].children[0].innerHTML = xorDecrypt(randomData[0].meaning, "arkanmakanikan")
     
         }
 
@@ -368,7 +380,7 @@
             setTimeout(()=>{
                 answerList.children[0].classList.add("bg-white")
             }, 2500)
-            if(answerList.children[0].innerHTML === randomData[0].meaning){
+            if(answerList.children[0].innerHTML === xorDecrypt(randomData[0].meaning, "arkanmakanikan")){
                 answerList.children[0].classList.remove('bg-white')
                 answerList.children[0].classList.add('bg-green-500')
                 return
@@ -380,7 +392,7 @@
             answerList.children[0].classList.add('bg-white')
         })
 
-        if(event.target.innerHTML === randomData[0].meaning){
+        if(event.target.innerHTML === xorDecrypt(randomData[0].meaning, "arkanmakanikan")){
             localStorage.setItem('score', parseInt(localStorage.getItem('score')) + 1 )
             updateScore()
             scoreNumber.innerHTML = parseInt(localStorage.getItem('score'))
@@ -405,7 +417,6 @@
             changeClass(selected[0], ["selected", "text-white"], [])
             changeClass(selected[1], ["selected"], ["hidden"])
 
-            console.log("changing selected to ", index)
             changeClass(navbar[index], [], ["selected", "text-white"])
             changeClass(sections[index], ["hidden"], ["selected"])
         } else {
