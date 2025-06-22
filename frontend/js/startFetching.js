@@ -10,7 +10,7 @@ setInterval(()=>{
 
 const developmentUrl = "http://localhost:3000/"
 const productionUrl = "https://vocab-server.glitch.me/"
-const url = developmentUrl
+const url = productionUrl
 async function startFetching(endpoint, method, token, body) {
     if(!isServerAwake){
         return {success: false, message: "server masih tidur", data: null}
