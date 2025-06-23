@@ -272,7 +272,7 @@
     }
 
 
-    async function updateScore() {
+    async function updateScore(attempt) {
         const body = {
             score: parseInt(localStorage.getItem("score"))
         }
@@ -283,8 +283,12 @@
         changeClass(warningText, ["text-gray-200", "text-red-600"], ["text-blue-600"])
         if(!result.success){
             changeClass(warningText, ["text-gray-200", "text-blue-600"], ["text-red-600"])
-            await getScore()
-            updateScore()
+            if(attempt < 2){
+                await getScore()
+                setTimeout(()=>{
+                    updateScore(attempt+1)
+                }, 2000)
+            }
             return
         }
         localStorage.setItem("score",result.data)
@@ -402,7 +406,7 @@
 
         if(event.target.innerHTML === xorDecrypt(randomData[0].meaning, "arkanmakanikan")){
             localStorage.setItem('score', parseInt(localStorage.getItem('score')) + 1 )
-            updateScore()
+            updateScore(1)
             scoreNumber.innerHTML = parseInt(localStorage.getItem('score'))
         }
 

@@ -5,7 +5,7 @@ window.onload = () => {
 
 const developmentUrl = "http://localhost:3000/"
 const productionUrl = "https://vocab-server.glitch.me/"
-const url = productionUrl
+const url = developmentUrl
 
 async function startFetching(endpoint, method, token, body) {
     if(!isServerAwake){

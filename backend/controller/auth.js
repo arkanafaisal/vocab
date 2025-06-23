@@ -46,10 +46,10 @@ authController.login = async (req, res) => {
     if(!req.cookies.refreshToken){
         const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
         res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,    // Supaya aman (tidak bisa dibaca JS)
-            sameSite: 'None',   // Boleh lintas halaman
-            path: '/',         // Berlaku untuk semua path
-            secure: true,   // Hanya untuk HTTPS (aktif jika pakai ngrok)
+            httpOnly: true,
+            sameSite: 'None',
+            path: '/',
+            secure: true, 
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
     }
