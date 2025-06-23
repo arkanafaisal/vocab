@@ -1,16 +1,12 @@
 let isServerAwake = false
-let loading = false
-checkServerState()
-setInterval(()=>{
-    if(!loading){
-        loading = true
-        checkServerState()
-    }
-}, 5000)
+window.onload = () => {
+    checkServerState()
+}
 
 const developmentUrl = "http://localhost:3000/"
 const productionUrl = "https://vocab-server.glitch.me/"
 const url = productionUrl
+
 async function startFetching(endpoint, method, token, body) {
     if(!isServerAwake){
         return {success: false, message: "server masih tidur", data: null}
@@ -41,12 +37,13 @@ async function checkServerState() {
     if(isServerAwake){return}
     try{
         const response = await fetch(url + "check")
+        if(!response.ok){
+            setTimeout(checkServerState, 3000)
+        }
+        
         isServerAwake = true
         console.log("the server is awake")
-        loading = false
     } catch(error) {
-        isServerAwake = false
-        console.log("the server is asleep")
-        loading = false
+        setTimeout(checkServerState, 3000)
     }
 }

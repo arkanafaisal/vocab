@@ -9,15 +9,15 @@
 <body class="bg-gray-200 max-w-screen h-screen min-h-screen overflow-hidden flex flex-col">
     <header class="w-full sticky bg-gray-900 text-gray-400 shadow-md py-4">
         <ul class="flex justify-evenly items-center w-full h-full text-xl md:text-2xl" id="navbar">
-            <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="play-navbar">Play</li>
+            <li class="selected text-white cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="play-navbar">Play</li>
             <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="leaderboard-navbar">Leaderboard</li>
-            <li class="selected text-white cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="profile-navbar">Profile</li>
+            <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="profile-navbar">Profile</li>
         </ul>
     </header>
 
     <main class="flex flex-1 overflow-hidden">
 
-        <section class="hidden flex flex-col flex-1 items-center" id="play">
+        <section class="selected flex flex-col flex-1 items-center" id="play">
             <div class="flex relative w-full justify-center items-center">
                 <div class="max-w-full mt-2 px-5 rounded-2xl text-md text-2xl top-0 bg-white shadow-md flex items-center py-2 gap-2 justify-center">
                     <h2>Score: </h2>
@@ -60,10 +60,10 @@
             </div>
         </section>
 
-        <section class="selected flex-1 flex flex-col justify-center items-center text-black" id="profile">
+        <section class="hidden flex-1 flex flex-col justify-center items-center text-black" id="profile">
             <button class="hidden mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile(true)">back</button>
             <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="loggingOut()">Log out</button>
-            <div class="hidden mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
+            <div class="mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
                 <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
                     <a class="py-1 px-5 " href="./login.html">Login</a>
                 </div>
@@ -124,6 +124,7 @@
     mainFunction()
     async function mainFunction(){
         if(isServerAwake){
+            warningText.innerHTML = "server is awake"
             getScore()
             setProfileByParam()
             refreshQuiz()
@@ -173,7 +174,10 @@
 
 
     
-    function loggingOut(){
+    async function loggingOut(){
+        const response = await startFetching("auth/logout", "DELETE", null, null)
+        if(!response.success){alert("logout gagal, coba lagi"); return}
+
         localStorage.removeItem("token")
         localStorage.removeItem("score")
         window.location.href = "./login.html"
@@ -230,8 +234,16 @@
         return 
     }
     
-    async function setLeaderboard() {
-        let allUSers = await getAllUsers()
+    async function setLeaderboard(attempt) {
+        const result = await startFetching("users/", "GET", null, null)
+        if(!result.success && attempt <=3){
+            setTimeout(()=>{
+                setLeaderboard(attempt+1)
+            }, 2000)
+            return
+        }
+
+        let allUSers = result.data
         allUSers.sort((a,b)=>b.score - a.score)
 
         for(let i = 0; i< allUSers.length; i++){
@@ -259,18 +271,8 @@
         }
     }
 
-    async function getAllUsers() {
-        const result = await startFetching("users/", "GET", null, null)
-        console.log(result.message)
-        if(!result.success){return }
-
-        return result.data
-
-    }
 
     async function updateScore() {
-    
-    
         const body = {
             score: parseInt(localStorage.getItem("score"))
         }
@@ -281,6 +283,8 @@
         changeClass(warningText, ["text-gray-200", "text-red-600"], ["text-blue-600"])
         if(!result.success){
             changeClass(warningText, ["text-gray-200", "text-blue-600"], ["text-red-600"])
+            await getScore()
+            updateScore()
             return
         }
         localStorage.setItem("score",result.data)
@@ -316,7 +320,7 @@
                 return
             }
 
-            setLeaderboard()
+            setLeaderboard(1)
             return
         }
         
@@ -326,8 +330,11 @@
         username = result.data.username
         email = result.data.email
         score = result.data.score
-        setLeaderboard()
-        switchContent(null, 0)
+        setLeaderboard(1)
+        
+        const params = new URLSearchParams(window.location.search)
+        const id = params.get('id')
+        if(!id){switchContent(null, 0)} 
         setMyProfile()
 
         setTimeout(()=>{
@@ -336,16 +343,17 @@
         return
     }
 
-    async function refreshData() {
+    async function refreshData(attempt) {
         if(randomData.length > 0){return true}
         const dataLength = 20
         let result
         console.log("requesting new data...")
         result = await startFetching('data/get/' + dataLength, 'GET')
-
-
-        if(!result.success){
-            console.log('failed to get data')
+        if(!result.success && attempt <=3){
+            setTimeout(()=>{
+                refreshData(attempt+1)
+            }, 2000)
+            return
         } else {
             console.log('successfully getting data')
 
@@ -361,7 +369,7 @@
     }
 
     async function refreshQuiz() {
-            if(randomData.length === 0){await refreshData()}
+            if(randomData.length === 0){await refreshData(1)}
             word.innerHTML = randomData[0].vocab.toString()
             answerLists.forEach((answerList)=> {
                 const randomIndex = Math.floor(Math.random()*randomMeaning.length)

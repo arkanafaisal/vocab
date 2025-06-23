@@ -44,10 +44,10 @@ authController.login = async (req, res) => {
     const token = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"1m"})
 
     if(!req.cookies.refreshToken){
-        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"20m"})
-        res.cookie('token', token, {
+        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
+        res.cookie('refreshToken', refreshToken, {
             httpOnly: true,    // Supaya aman (tidak bisa dibaca JS)
-            sameSite: 'Lax',   // Boleh lintas halaman
+            sameSite: 'None',   // Boleh lintas halaman
             path: '/',         // Berlaku untuk semua path
             secure: true,   // Hanya untuk HTTPS (aktif jika pakai ngrok)
             maxAge: 7 * 24 * 60 * 60 * 1000
@@ -58,14 +58,21 @@ authController.login = async (req, res) => {
 
 authController.logout = async (req, res) => {
     console.log('logout endpoint hit')
+    res.clearCookie("refreshToken", {
+        httpOnly: true,    
+        sameSite: 'None', 
+        path: '/',     
+        secure: true,
+    })
+    return response(200, true, "log out success", null, res)
 }
 
 authController.refreshToken = async (req, res) => {
     console.log("getting new access token")
     try {
         const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
-        
-        const newToken = jwt.sign(decoded, process.env.JWT_SECRETKEY, {expiresIn:"20m"})
+        const payload = {id: decoded._id, username: decoded.username, score: decoded.score}
+        const newToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"1m"})
         return response(200, true, "new token created", newToken, res)
     } catch(err){
         if(err.name === "TokenExpiredError"){return response(403, false, "refresh token expired", null, res)}
