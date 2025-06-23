@@ -6,7 +6,7 @@
     <title>Main Page</title>
     <link href="./src/output.css" rel="stylesheet">
 </head>
-<body class="bg-gray-200 max-w-screen h-screen min-h-screen overflow-hidden flex flex-col">
+<body class="bg-gray-300 max-w-screen h-screen min-h-screen overflow-hidden flex flex-col">
     <header class="w-full sticky bg-gray-900 text-gray-400 shadow-md py-4">
         <ul class="flex justify-evenly items-center w-full h-full text-xl md:text-2xl" id="navbar">
             <li class="selected text-white cursor-pointer hover:text-white transition-colors duration-200" onclick="switchContent(event)" id="play-navbar">Play</li>
@@ -49,7 +49,7 @@
                     <li class="flex-8">score</li>
                 </ul>
             </div>
-            <div class="px-2 overflow-auto w-[90%] h-[90%] max-h-[90%] md:w-[60%] md:px-4 flex flex-col gap-1" id="leaderboard-container">
+            <div class="px-2 overflow-auto w-[90%] flex-1 max-h-[90%] md:w-[60%] md:px-4 flex flex-col gap-1" id="leaderboard-container">
                 <div class="hidden cursor-pointer text-md md:text-2xl bg-white rounded-xl p-1 border-1 border-gray-600 box-border" id="user-node">
                     <ul class="flex gap-2 justify-between">
                         <li class="flex-2">1</li>
@@ -58,6 +58,7 @@
                     </ul>
                 </div>
             </div>
+            <div class="bg-green-500 w-[90%] my-1 px-2 py-1 rounded-lg transition-colors duration-500" onclick="setLeaderboard()" id="refresh-leaderboard-btn">refresh leaderboard</div>
         </section>
 
         <section class="hidden flex-1 flex flex-col justify-center items-center text-black" id="profile">
@@ -106,6 +107,8 @@
     /////////////////////////////////////////////
     const leaderboardContainer = document.getElementById("leaderboard-container")
     const userNode = document.getElementById("user-node")
+    const refreshLeaderboardBtn = document.getElementById("refresh-leaderboard-btn")
+    let isOnCooldown = false
 
     
     
@@ -126,6 +129,7 @@
         if(isServerAwake){
             warningText.innerHTML = "server is awake"
             getScore()
+            setLeaderboard()
             setProfileByParam()
             refreshQuiz()
             return
@@ -234,17 +238,21 @@
         return 
     }
     
-    async function setLeaderboard(attempt) {
+    async function setLeaderboard() {
+        if(isOnCooldown){return}
+        changeClass(refreshLeaderboardBtn, ["bg-green-500"], ["bg-red-500"])
+        setTimeout(()=>{
+            isOnCooldown = false
+            changeClass(refreshLeaderboardBtn, ["bg-red-500"], ["bg-green-500"])
+        }, 3000)
         const result = await startFetching("users/", "GET", null, null)
-        if(!result.success && attempt <=3){
-            setTimeout(()=>{
-                setLeaderboard(attempt+1)
-            }, 2000)
+        if(!result.success){
             return
         }
 
         let allUSers = result.data
         allUSers.sort((a,b)=>b.score - a.score)
+        leaderboardContainer.replaceChildren([])
 
         for(let i = 0; i< allUSers.length; i++){
             let duplicate = userNode.cloneNode(true)
@@ -280,9 +288,9 @@
 
 
         warningText.innerHTML = result.message
-        changeClass(warningText, ["text-gray-200", "text-red-600"], ["text-blue-600"])
+        changeClass(warningText, ["text-gray-300", "text-red-600"], ["text-blue-600"])
         if(!result.success){
-            changeClass(warningText, ["text-gray-200", "text-blue-600"], ["text-red-600"])
+            changeClass(warningText, ["text-gray-300", "text-blue-600"], ["text-red-600"])
             if(attempt < 2){
                 await getScore()
                 setTimeout(()=>{
@@ -296,7 +304,7 @@
         setMyProfile()
 
         setTimeout(()=>{
-            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-200"])
+            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-300"])
         }, 3000)
     }
 
@@ -306,10 +314,10 @@
         }
         const result = await startFetching('profile/get', 'POST', localStorage.getItem("token"),  body)
         warningText.innerHTML = result.message
-        changeClass(warningText, ["text-red-600"], ["text-blue-600"])
+        changeClass(warningText, ["text-red-600", "text-gray-300"], ["text-blue-600"])
 
         if(!result.success){
-            changeClass(warningText, ["text-blue-600"], ["text-red-600"])
+            changeClass(warningText, ["text-blue-600", "text-gray-300"], ["text-red-600"])
             localStorage.setItem("score", 0)
             scoreNumber.innerHTML = 0
 
@@ -323,8 +331,6 @@
                 getScore()
                 return
             }
-
-            setLeaderboard(1)
             return
         }
         
@@ -334,7 +340,7 @@
         username = result.data.username
         email = result.data.email
         score = result.data.score
-        setLeaderboard(1)
+        setLeaderboard()
         
         const params = new URLSearchParams(window.location.search)
         const id = params.get('id')
@@ -342,7 +348,7 @@
         setMyProfile()
 
         setTimeout(()=>{
-            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-200"])
+            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-300"])
         }, 3000)    
         return
     }
@@ -354,10 +360,7 @@
         console.log("requesting new data...")
         result = await startFetching('data/get/' + dataLength, 'GET')
         if(!result.success && attempt <=3){
-            setTimeout(()=>{
-                refreshData(attempt+1)
-            }, 2000)
-            return
+            return refreshData(attempt+1)
         } else {
             console.log('successfully getting data')
 
@@ -385,7 +388,7 @@
         }
 
     function showAnswer(event) {
-        if(answered){return}
+        if(answered || randomData.length === 0){return}
         answered = true
         let answerTransition
         answerLists.forEach(answerList => {
