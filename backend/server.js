@@ -20,24 +20,28 @@ const PORT = process.env.PORT || 3000
 app.use(express.json())
 app.use(cookieParser())
 app.use(cors({
-  origin: 'http://127.0.0.1:5500' , // GANTI ke frontend kamu
-  credentials: true                // wajib kalau pakai cookie
+  origin: 'https://vocab.arkanafaisal.my.id',  // ganti dengan URL frontend production
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // opsional, untuk batasi method
+  allowedHeaders: ['Content-Type'],   // opsional, header yg diizinkan
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }))
-app.use((req,res,next)=>{
-    console.log(`\n${req.method} request coming...`);
-    next()
-})
+
+
 
 
 app.get('/check', (req, res)=>{
-  return res.send(true)
+  return res.send("server aktif")
 })
 app.use('/users', await usersRouter)
 app.use('/auth', await authRouter)
 app.use('/profile', await profileRouter)
 app.use('/data', await dataRouter)
 
-
+app.get('/test-cookies', (req, res)=>{
+  console.log(req.cookies)
+})
 
 app.listen(PORT, async () => {
     console.log(`Server is running on port ${PORT}`);

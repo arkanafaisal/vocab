@@ -1,4 +1,4 @@
-import express from 'express';
+import Joi from "joi"
 import bcrypt from 'bcrypt'
 import jwt from 'jsonwebtoken'
 
@@ -8,76 +8,101 @@ import { getDb } from '../db.js'
 const authController = {}
 
 authController.register = async (req, res) => {
-    console.log("register endpoint hit")
-    const { username, email, password } = req.body;
-    if (!username || !email || !password) {return response(400, false, "please fill all the form", null, res);}
+    const { username, password } = req.body;
+    const userSchema = Joi.object({
+        username: Joi.string().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
+        password: Joi.string().max(255).required()
+    })
+    const {error, value} = userSchema.validate({username, password})
+    if(error){return response(res, false, error.details[0].message)}
 
-    const db = getDb()
-    const isUserExists = await db.collection('users').findOne({ username });
-    if (isUserExists) {return response(409, false, 'Account already exists', null, res);}
-    
-    const hashedPassword = await bcrypt.hash(password, 10)
-    const newUser = { username, email, password:hashedPassword, score: 0}
-    const insertResult = await db.collection('users').insertOne(newUser);
-    if (!insertResult.acknowledged) {return response(500, false, 'error, please try again', null, res);}
-    
-    return response(201, true, 'User registered successfully', { userId: insertResult.insertedId }, res);
+    try {
+        const db = getDb()
+      
+        const hashedPassword = await bcrypt.hash(password, 10)
+        const newUser = { username, password:hashedPassword, score: 0}
+
+        const insertResult = await db.collection('users').insertOne(newUser)
+        if(!insertResult.acknowledged){return response(res, false, "failed to create user")}
+        
+        return response(res, true, "user created");
+    } catch(err) {
+        if(err.code === 11000){return response(res, false, "user already exist")}
+        return response(res, false, "server error")
+    }
 }
 
-
-
-
-
 authController.login = async (req, res) => {
-    console.log("login endpoint hit")
     const { username, password } = req.body
-    if(!username || !password){return response(400, false, "please fill all the form", null, res)}
+    const loginSchema = Joi.object({
+        username: Joi.string().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
+        password: Joi.string().max(255).required()
+    })
+    const { error, value } = loginSchema.validate({username, password})
+    if(error){return response(res, false, error.details[0].message)}
 
-    const db = getDb()
-    const findUser = await db.collection('users').findOne({username})
-    if(!findUser){return response(404, false, "username or password incorrect", null, res)}
-
-    const matchPassword = await bcrypt.compare(password, findUser.password)
-    if(!matchPassword){return response(404, false, "username or password incorrect", null, res)}
-
-    const payload = {id: findUser._id, username: findUser.username, score: findUser.score}
-    const token = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"1m"})
-
-    if(!req.cookies.refreshToken){
-        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
-        res.cookie('refreshToken', refreshToken, {
+    try {
+        const db = getDb()
+        const user = await db.collection('users').findOne({username})
+        if(!user){return response(res, false, "username or password incorrect")}
+    
+        const matchPassword = await bcrypt.compare(password, user.password)
+        if(!matchPassword){return response(res, false, "username or password incorrect")}
+    
+        const payload = {id: user._id}
+        const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
+        res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            sameSite: 'None',
+            sameSite: 'none', //secure
+            secure: true, //true
             path: '/',
-            secure: true, 
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+            maxAge: 10 * 60 * 1000
+        })
+
+        if(!req.cookies.refreshToken){
+            const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
+            res.cookie('refreshToken', refreshToken, {
+                httpOnly: true,
+                sameSite: 'none', //secure
+                secure: true, //true
+                path: '/',
+                maxAge: 7 * 24 * 60 * 60 * 1000
+            });
+        }
+        return response(res, true, "login successfull")
+    } catch(err) {
+        console.log(err)
+        return response(res, false, "server error")
     }
-    return response(200, true, "login successfull", {user: payload, token: token}, res)
 }
 
 authController.logout = async (req, res) => {
-    console.log('logout endpoint hit')
     res.clearCookie("refreshToken", {
         httpOnly: true,    
         sameSite: 'None', 
         path: '/',     
         secure: true,
     })
-    return response(200, true, "log out success", null, res)
+    return response(res, true, "logout success")
 }
 
 authController.refreshToken = async (req, res) => {
-    console.log("getting new access token")
     try {
         const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
-        const payload = {id: decoded._id, username: decoded.username, score: decoded.score}
-        const newToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"1m"})
-        return response(200, true, "new token created", newToken, res)
+        const payload = {id: decoded.id}
+        const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
+        res.cookie('accessToken', accessToken, {
+            httpOnly: true,
+            sameSite: 'Lax', //secure
+            secure: false, //true
+            path: '/',
+            maxAge: 10* 60 * 1000
+        })
+        return response(res, true, "new token created")
     } catch(err){
-        if(err.name === "TokenExpiredError"){return response(403, false, "refresh token expired", null, res)}
-        if(err.name === "JsonWebTokenError"){return response(403, false, "refresh token invalid", null, res)}
-        return response(403, false, "error when verifying token", null, res)
+        if(err.name === "TokenExpiredError"){return response(res, false, "refresh token expired")}
+        if(err.name === "JsonWebTokenError"){return response(res, false, "refresh token invalid")}
+        return response(res, false, "server error")
     }
 }
 

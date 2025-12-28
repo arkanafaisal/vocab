@@ -24,19 +24,21 @@
                     <h2 class="" id="scoreNumber">0</h2>
                 </div>
             </div>
-            <p class="text-sm text-red-600" id="warning-text">waking up server...</p>
+            <p class="text-sm text-red-600" id="warning-text">checking session...</p>
 
             <div class="flex-1 w-full flex justify-center items-center">
                 <div class="max-w-[80%]  box-border border border-gray-300 rounded-2xl px-5 py-6 bg-white text-gray-900 flex flex-col items-center shadow-lg" id="container">
                 <h1 class="text-2xl sm:text-3xl ">Cari Arti Dari Kata:</h1>
-                <h2 class="text-3xl sm:text-4xl font-bold my-1 sm:my-4" id="word">Example</h2>
-                <ul class="mt-8 sm:mt-10 flex flex-col items-center justify-center gap-1 text-white text-md sm:text-xl" id="answer">
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)">this is answer number 1</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)">this is answer number 2</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
-                    <li><button class="px-4 py-1 bg-blue-500 rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(event)" >this is answer number 3</button></li>
-                </ul>
+                <h2 class="text-3xl sm:text-4xl font-bold my-1 sm:my-4" id="vocab-word">Example</h2>
+                <fieldset id="answer-fieldset">
+                    <ul class="mt-8 sm:mt-10 flex flex-col items-center justify-center gap-1 text-white text-md sm:text-xl" id="answer">
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)">this is answer number 2</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)">this is answer number 1</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >this is answer number 3</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >this is answer number 3</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >this is answer number 3</button></li>
+                    </ul>
+                </fieldset>
                 </div>
             </div>
         </section>
@@ -58,12 +60,12 @@
                     </ul>
                 </div>
             </div>
-            <div class="bg-green-500 w-[90%] my-1 px-2 py-1 rounded-lg transition-colors duration-500" onclick="setLeaderboard()" id="refresh-leaderboard-btn">refresh leaderboard</div>
+            <div class="bg-green-500 w-[90%] md:w-[60%] cursor-pointer my-1 px-2 py-1 rounded-lg transition-colors duration-500" onclick="setLeaderboard()" id="refresh-leaderboard-btn">refresh leaderboard</div>
         </section>
 
         <section class="hidden flex-1 flex flex-col justify-center items-center text-black" id="profile">
             <button class="hidden mt-2 border-1 border-gray-400 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="my-profile-btn" onclick="setMyProfile(true)">back</button>
-            <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="loggingOut()">Log out</button>
+            <button class="hidden border-1 border-gray-400 mt-2 flex bg-white py-1 px-5 shadow-md rounded-2xl gap-4 md:h-10 mx-auto text-md md:text-xl cursor-pointer" id="logout-btn" onclick="logout()">Log out</button>
             <div class="mt-2 flex gap-4 md:h-10 mx-auto text-md md:text-xl" id="sign-options">
                 <div class="bg-white border-1 border-gray-400 shadow-md rounded-2xl flex justify-center items-center">
                     <a class="py-1 px-5 " href="./login.html">Login</a>
@@ -88,379 +90,8 @@
     </main>
 
 <script src="./js/startFetching.js"></script>
-<script>
-    const navbar = Array.from(document.getElementById('navbar').children)
-    const sections = Array.from(document.querySelector('main').children)
-
-    /////////////////////////////////////////////
-    const profileUsername = document.getElementById("profile-username")
-    const profileEmail = document.getElementById("profile-email")
-    const profileScore = document.getElementById("profile-score")
-    const myProfileBtn = document.getElementById("my-profile-btn")
-    const signOptions = document.getElementById("sign-options")
-    const logOutBtn = document.getElementById("logout-btn")
-
-    let username, email, score
-
-    
-    
-    /////////////////////////////////////////////
-    const leaderboardContainer = document.getElementById("leaderboard-container")
-    const userNode = document.getElementById("user-node")
-    const refreshLeaderboardBtn = document.getElementById("refresh-leaderboard-btn")
-    let isOnCooldown = false
-
-    
-    
-    
-    /////////////////////////////////////////////
-    const word = document.getElementById('word')
-    const warningText = document.getElementById("warning-text")
-    const scoreNumber = document.getElementById('scoreNumber')
-    const answerLists = Array.from(document.getElementById('answer').children)
-    
-    let randomData = []
-    let randomMeaning = []
-    let answered
-    let stopUpdating = false
-    
-    mainFunction()
-    async function mainFunction(){
-        if(isServerAwake){
-            warningText.innerHTML = "server is awake"
-            getScore()
-            setLeaderboard()
-            setProfileByParam()
-            refreshQuiz()
-            return
-        }
-        setTimeout(mainFunction, 2000)
-    }
-    
-    
-    
-
-
-
-    
-
-    
-
-    
-
-
-    
-
-    
-
-    
-    
-
-
-
-
-
-    
-    
-
-
-
-
-
-
-
-    
-
-
-
-    
-
-
-
-    
-    async function loggingOut(){
-        const response = await startFetching("auth/logout", "DELETE", null, null)
-        if(!response.success){alert("logout gagal, coba lagi"); return}
-
-        localStorage.removeItem("token")
-        localStorage.removeItem("score")
-        window.location.href = "./login.html"
-    }
-
-    function setMyProfile(isFromClicking){
-        myProfileBtn.classList.add("hidden")
-        signOptions.classList.remove("hidden")
-
-        if(isFromClicking){
-            const url = new URL(window.location)
-            url.search = ""
-            window.history.replaceState({}, "", url)
-        }
-        if(!username || !email){
-            profileUsername.innerHTML = "~~~~~~~"
-            profileEmail.innerHTML = "~~~~~~~~~~~~~~~~~~~~~"
-            profileScore.innerHTML = "-1"
-            return
-        }
-
-        profileUsername.innerHTML = username
-        profileEmail.innerHTML = email
-        profileScore.innerHTML = score
-
-        signOptions.classList.add("hidden")
-        logOutBtn.classList.remove("hidden")
-    }
-
-    async function setProfileByParam(){
-
-        const params = new URLSearchParams(window.location.search)
-        const id = params.get('id')
-        if(!id){
-            setMyProfile()
-            return
-        }
-        const result = await startFetching("users/" + id, "GET", null, null)
-        if(!result.success){
-            setMyProfile()
-            return
-        }
-
-
-        profileUsername.innerHTML = result.data.username
-        profileEmail.innerHTML = result.data.email
-        profileScore.innerHTML = result.data.score
-
-        switchContent(null, 2)
-
-        myProfileBtn.classList.remove("hidden")
-        signOptions.classList.add("hidden")
-        logOutBtn.classList.add("hidden")
-        return 
-    }
-    
-    async function setLeaderboard() {
-        if(isOnCooldown){return}
-        changeClass(refreshLeaderboardBtn, ["bg-green-500"], ["bg-red-500"])
-        setTimeout(()=>{
-            isOnCooldown = false
-            changeClass(refreshLeaderboardBtn, ["bg-red-500"], ["bg-green-500"])
-        }, 3000)
-        const result = await startFetching("users/", "GET", null, null)
-        if(!result.success){
-            return
-        }
-
-        let allUSers = result.data
-        allUSers.sort((a,b)=>b.score - a.score)
-        leaderboardContainer.replaceChildren([])
-
-        for(let i = 0; i< allUSers.length; i++){
-            let duplicate = userNode.cloneNode(true)
-            duplicate.classList.remove("hidden")
-            duplicate.id = allUSers[i]._id
-
-            let list = duplicate.children[0].children
-            list[0].innerHTML = i+1 
-            list[1].innerHTML = allUSers[i].username
-            list[2].innerHTML = allUSers[i].score
-
-            if(allUSers[i].username === username){
-                changeClass(duplicate, ["bg-white"], ["bg-blue-300"])
-            }
-
-            duplicate.addEventListener("click", event => {
-                const url = new URL(window.location)
-                url.searchParams.set("id", event.currentTarget.id)
-                window.history.replaceState({}, "", url)
-                setProfileByParam()
-            })
-
-            leaderboardContainer.appendChild(duplicate)
-        }
-    }
-
-
-    async function updateScore(attempt) {
-        const body = {
-            score: parseInt(localStorage.getItem("score"))
-        }
-        const result = await startFetching("profile/changeData", "PUT", localStorage.getItem("token"), body)
-
-
-        warningText.innerHTML = result.message
-        changeClass(warningText, ["text-gray-300", "text-red-600"], ["text-blue-600"])
-        if(!result.success){
-            changeClass(warningText, ["text-gray-300", "text-blue-600"], ["text-red-600"])
-            if(attempt < 2){
-                await getScore()
-                setTimeout(()=>{
-                    updateScore(attempt+1)
-                }, 2000)
-            }
-            return
-        }
-        localStorage.setItem("score",result.data)
-        score = result.data
-        setMyProfile()
-
-        setTimeout(()=>{
-            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-300"])
-        }, 3000)
-    }
-
-    async function getScore() {
-        const body = {
-            score: parseInt(localStorage.getItem("score"))
-        }
-        const result = await startFetching('profile/get', 'POST', localStorage.getItem("token"),  body)
-        warningText.innerHTML = result.message
-        changeClass(warningText, ["text-red-600", "text-gray-300"], ["text-blue-600"])
-
-        if(!result.success){
-            changeClass(warningText, ["text-blue-600", "text-gray-300"], ["text-red-600"])
-            localStorage.setItem("score", 0)
-            scoreNumber.innerHTML = 0
-
-            if(result.message === "token expired"){
-                const result2 = await startFetching("auth/refresh", "POST", null, null)
-                if(!result2.success){
-                    setTimeout(getScore, 5000)
-                    return
-                }
-                localStorage.setItem('token', result2.data)
-                getScore()
-                return
-            }
-            return
-        }
-        
-        localStorage.setItem("score", result.data.score)
-        scoreNumber.innerHTML = result.data.score
-
-        username = result.data.username
-        email = result.data.email
-        score = result.data.score
-        setLeaderboard()
-        
-        const params = new URLSearchParams(window.location.search)
-        const id = params.get('id')
-        if(!id){switchContent(null, 0)} 
-        setMyProfile()
-
-        setTimeout(()=>{
-            changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-300"])
-        }, 3000)    
-        return
-    }
-
-    async function refreshData(attempt) {
-        if(randomData.length > 0){return true}
-        const dataLength = 20
-        let result
-        console.log("requesting new data...")
-        result = await startFetching('data/get/' + dataLength, 'GET')
-        if(!result.success && attempt <=3){
-            return refreshData(attempt+1)
-        } else {
-            console.log('successfully getting data')
-
-            randomData = result.data[0].map(value => {
-                return {
-                    vocab: JSON.stringify(value.vocab),
-                    meaning: xorEncrypt(value.meaning, "arkanmakanikan")
-                }
-            })
-            randomMeaning = result.data[1]
-            
-        }
-    }
-
-    async function refreshQuiz() {
-            if(randomData.length === 0){await refreshData(1)}
-            word.innerHTML = randomData[0].vocab.toString()
-            answerLists.forEach((answerList)=> {
-                const randomIndex = Math.floor(Math.random()*randomMeaning.length)
-                answerList.children[0].innerHTML = randomMeaning[randomIndex]
-            })
-            const randomIndex = Math.floor(Math.random()*answerLists.length)
-            answerLists[randomIndex].children[0].innerHTML = xorDecrypt(randomData[0].meaning, "arkanmakanikan")
-    
-        }
-
-    function showAnswer(event) {
-        if(answered || randomData.length === 0){return}
-        answered = true
-        let answerTransition
-        answerLists.forEach(answerList => {
-            setTimeout(()=>{
-                answerList.children[0].classList.add("bg-white")
-            }, 2500)
-            if(answerList.children[0].innerHTML === xorDecrypt(randomData[0].meaning, "arkanmakanikan")){
-                answerList.children[0].classList.remove('bg-white')
-                answerList.children[0].classList.add('bg-green-500')
-                return
-            } else if(answerList.children[0] === event.target){
-                changeClass(event.target, [], ["bg-red-500"])
-                return
-            }
-            answerList.children[0].classList.remove('bg-blue-500')
-            answerList.children[0].classList.add('bg-white')
-        })
-
-        if(event.target.innerHTML === xorDecrypt(randomData[0].meaning, "arkanmakanikan")){
-            localStorage.setItem('score', parseInt(localStorage.getItem('score')) + 1 )
-            updateScore(1)
-            scoreNumber.innerHTML = parseInt(localStorage.getItem('score'))
-        }
-
-        setTimeout(() => {
-            answerLists.forEach(answerList => {
-                answerList.children[0].classList.remove('bg-green-500', 'bg-red-500', 'bg-white')
-                answerList.children[0].classList.add('bg-blue-500')
-            })
-            randomData.shift()
-            refreshQuiz() .then(()=>{
-                answered = false
-            })
-
-        }, 3000)
-    }
-
-    function switchContent(event, index){
-        let selected = Array.from(document.getElementsByClassName('selected'))
-        if(typeof index === "number"){
-            changeClass(selected[0], ["selected", "text-white"], [])
-            changeClass(selected[1], ["selected"], ["hidden"])
-
-            changeClass(navbar[index], [], ["selected", "text-white"])
-            changeClass(sections[index], ["hidden"], ["selected"])
-        } else {
-            navbar.forEach((val, index) => {
-                if(event.target == val){
-                    changeClass(selected[0], ["selected", "text-white"], [])
-                    changeClass(selected[1], ["selected"], ["hidden"])
-
-                    event.target.classList.add('selected', 'text-white')
-                    changeClass(sections[index], ["hidden"], ["selected"])
-                }
-            })
-        }
-    }
-    
-    function changeClass(element, removed, added){
-    element.classList.remove(...removed)
-    element.classList.add(...added)
-}
-    
-    function xorEncrypt(text, key) {
-        return [...text].map((char, i) =>
-            String.fromCharCode(char.charCodeAt(0) ^ key.charCodeAt(i % key.length))
-        ).join('')
-    }
-
-    function xorDecrypt(cipher, key) {
-        return xorEncrypt(cipher, key)
-    }
-</script>
+<script src="./js/UI-function.js"></script>
+<script src="./js/data.js"></script>
+<script src="./js/main.js"></script>
 </body>
 </html>

@@ -1,5 +1,3 @@
-import express from 'express'
-import jwt from 'jsonwebtoken'
 import { ObjectId } from 'mongodb'
 
 import { getDb } from '../db.js'
@@ -9,18 +7,18 @@ import { response } from '../response.js'
 const profileController = {}
 
 profileController.getData = async (req, res) => {
-    console.log("get endpoint hit")
-    
     const db = getDb()
-    const result = await db.collection("users").findOne({username: req.user.username})
-
-    return response(200, true, "successfully getting score", {username: result.username, email: result.email, score: result.score}, res)
+    try {
+        const result = await db.collection("users").findOne({_id: new ObjectId(req.user.id)}, { projection: { _id: 0, username: 1, email: 1, score: 1 }})
+        return response(res, true, "successfully getting score", result)
+    } catch(err) {
+        return response(res, false, "server error")
+    }
 }
 
 profileController.changeUserData = async (req, res) => {
-    console.log('changeData endpoint hit')
     let { score } = req.body
-    if(typeof score !== "number"){return response(400, false, "score isnt defined", null, res)}
+    
 
     const db = getDb()
 

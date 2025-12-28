@@ -1,12 +1,15 @@
+import Joi from 'joi'
 import { getDb } from '../db.js'
+import redis from '../redis.js'
 import { response } from '../response.js'
+import { ObjectId } from 'mongodb'
 
 const dataController = {}
 
 dataController.insertData = async (req, res) => {
     console.log('insert endpoint hit')
     const { data_access_token } = req.body
-    if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(403, false, "akses tidak diizinkan", null, res)}
+    if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "akses tidak diizinkan")}
 
     const db = getDb()
     try {
@@ -42,39 +45,79 @@ dataController.deleteData = async (req, res) => {
 
 dataController.getData = async (req, res) => {
     console.log('get endpoint hit')
-    let number = req.params.number
-    number = parseInt(number)
-    if(isNaN(number)){return response(400, false, "please fill the number param", null, res)}
 
     try {
         const db = getDb()
         const randomData = await db.collection('datas').aggregate([
             {$project: {_id: 0, vocab: 1, meaning: 1}},
-            {$sample: {size : number}}
+            {$sample: {size : 5}}
         ]).toArray()
         const randomMeaning = await db.collection('datas').aggregate([
             {$project: {_id: 0, meaning: 1}},
-            {$sample: {size : number*5}}
+            {$sample: {size : 5*4}}
         ]).toArray()
-        if(!randomData || !randomMeaning){return response(500, false, "error when getting data", null, res)}
-        const randomMeaningMapped = randomMeaning.map(value => {
-            return value.meaning
+
+        let randomMeaning2 = randomMeaning.map(item => item.meaning)
+        
+        const batchId = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+        let questions = []
+        let answers = []
+        randomData.forEach(data => {
+            const choices = randomMeaning2.splice(0,4)
+            const randomIndex = Math.floor(Math.random() * 5)
+            choices.splice(randomIndex, 0, data.meaning)
+
+            questions.push({
+                vocab: data.vocab,
+                choices
+            })
+            answers.push(data.meaning)
         })
-        const result = [randomData,randomMeaningMapped]
-        return response(200, true, "successfully getting data", result, res)
+
+        redis.set(`vocab:answers:${batchId}`, JSON.stringify(answers), {EX: 300})
+        return response(res, true, "successfully getting question", [batchId, questions])
     } catch(error) {
         console.error(error)
-        return response(500, false, "error when getting data", null, res)
+        return response(res, false, "database error")
     }
+}
 
-    // for(loop=0; loop>0; loop--){
+dataController.validateAnswer = async (req, res) => {
+    const reqSchema = Joi.object({
+        batchId: Joi.string().required(),
+        answer: Joi.string().required()
+    })
+    const {error, value} = reqSchema.validate(req.body)
+    if(error){return response(res, false, error.details[0].message)}
+
+    try {
+        const key = `vocab:answers:${value.batchId}`
+        const rawData = await redis.get(key)
+        if(!rawData){return response(res, false, "batch expired")}
+        const data = JSON.parse(rawData)
+
+        const correctAnswer = data[0]
         
-    // }
-    
+        if(data.length === 1){await redis.del(key)}
+        else{
+            data.shift()
+            await redis.set(key, JSON.stringify(data))
+        }
 
+        if(correctAnswer !== value.answer){return response(res, true, "incorrect", correctAnswer)}
 
-    return response(200, true, "data berhasil didapatkan", number, res)
+        const db = getDb()
+        const updatedUser = await db.collection('users').updateOne(
+            { _id: new ObjectId(req.user.id) },
+            { $inc: { score: 1 } }
+        )
+        if(!updatedUser.acknowledged || updatedUser.matchedCount === 0 || updatedUser.modifiedCount === 0){return response(res, false, "server error")}
 
+        return response(res, true, "correct")
+    } catch(err) {
+        console.log(err)
+        return response(res, false, "server error")
+    }
 }
 
 export default dataController

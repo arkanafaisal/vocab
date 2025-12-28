@@ -4,24 +4,21 @@ import jwt from 'jsonwebtoken'
 import { response } from '../response.js'
 
 function verifyJwt(req, res, next){
-    console.log('verifying jwt...')
-    const authHeader = req.headers.authorization
-    const token = authHeader && authHeader.split(' ')[1]
+    const token = req.cookies.accessToken
 
-    if(!token){return response(401, false, "please login first", null, res)}
+    if(!token){return response(res, false, "token expired")}
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRETKEY)
         req.user = decoded
-        console.log('jwt verified')
         next()
     } catch(err) {
         if (err.name === 'TokenExpiredError') {
-            return response(403, false, "token expired", null, res)
+            return response(res, false, "token expired")
         } else if (err.name === 'JsonWebTokenError') {
-            return response(403, false, "token invalid", null, res)
+            return response(res, false, "token invalid")
         }
-        return response(403, false, "error when verifying token", null, res)
+        return response(res, false, "server error")
     }
 }
 
