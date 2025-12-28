@@ -16,29 +16,29 @@ dataController.insertData = async (req, res) => {
         const result = await db.collection('datas').insertMany(req.body.datas)
             console.log(req.body.datas)
             
-            return response(201, true, "data berhasil dimasukkan", result, res)
+            return response(res, true, "data berhasil dimasukkan", result)
     } catch(error) {
-        if(error) {return response(500, false, "error when inserting", null, res)}
+        if(error) {return response(res, false, "error when inserting", null)}
     }
 }
 
 
 dataController.deleteData = async (req, res) => {
     const { data_access_token, datas } = req.body
-    if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(403, false, "access denied", null, res)}
+    if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "access denied")}
     let deleteQuery = {$or: datas}
     if(datas.length === 0){deleteQuery = {}}
     try {
         const db = getDb()
         
         const result = await db.collection('datas').deleteMany(deleteQuery)
-        if(!result.acknowledged){return response(500, false, "error when inserting", null, res)}
+        if(!result.acknowledged){return response(res, false, "error when deleting")}
 
-        return response(201, true, "successfully deleteing", result.deletedCount, res)
+        return response(res, true, "successfully deleteing", result.deletedCount)
 
 
     } catch(error) {
-        return response(500, false, "error when deleting", null, res)
+        return response(res, false, "error when deleting")
     }
 }
 
