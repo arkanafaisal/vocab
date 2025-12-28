@@ -49,7 +49,7 @@
                 password: passwordInput.value
             }
 
-            const result = await startFetching("auth/register", "POST", null, data)
+            const result = await startFetching("auth/register", "POST", data)
             showMessageError(result.message)
             if(!result.success){return}
 
