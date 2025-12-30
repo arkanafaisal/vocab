@@ -28,7 +28,6 @@ authController.register = async (req, res) => {
 
         const insertResult = await db.collection('users').insertOne(newUser)
         if(!insertResult.acknowledged){return response(res, false, "failed to create user")}
-        console.log('REGISTER HIT PID:', process.pid)
 
         return response(res, true, "user created");
     } catch(err) {
@@ -106,7 +105,21 @@ authController.refreshToken = async (req, res) => {
         const db = getDb()
 
         const user = db.collection('users').findOne({_id: id})
-        if(!user) return response(res, false, 'refresh token invalid')
+        if(!user) {
+            res.clearCookie("refreshToken", {
+                httpOnly: true,    
+                sameSite: 'None', 
+                path: '/',     
+                secure: true,
+            })
+            res.clearCookie("accessToken", {
+                httpOnly: true,    
+                sameSite: 'None', 
+                path: '/',     
+                secure: true,
+            })
+            return response(res, false, 'refresh token invalid')
+        }
 
         const payload = {id: decoded.id}
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})

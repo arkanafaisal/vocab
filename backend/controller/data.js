@@ -128,7 +128,7 @@ dataController.validateAnswer = async (req, res) => {
         if(data.length === 1){await redis.del(key)}
         else{
             data.shift()
-            await redis.set(key, JSON.stringify(data))
+            await redis.set(key, JSON.stringify(data), {'EX': 300})
         }
 
         if(correctAnswer !== value.answer){return response(res, true, "incorrect", correctAnswer)}
