@@ -10,7 +10,7 @@ usersController.getAllUsers = async (req, res) => {
         const db = getDb()
         const users = await db.collection("users").find(
             {},
-            { projection: { _id: 1, username: 1, score: 1 } }
+            { projection: { _id: 0, username: 1, score: 1 } }
         ).toArray()
     
         return response(res, true, "retrieved all users", users)

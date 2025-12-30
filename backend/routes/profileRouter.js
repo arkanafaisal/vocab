@@ -8,7 +8,7 @@ const profileRouter = express.Router()
 //     next()
 // })
 
-profileRouter.post('/get', verifyJwt, profileController.getData)
+profileRouter.get('/me', verifyJwt, profileController.getData)
 profileRouter.put('/changeData', verifyJwt, profileController.changeUserData)
 
 export default profileRouter

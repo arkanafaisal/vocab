@@ -6,7 +6,7 @@ import { response } from '../response.js'
 function verifyJwt(req, res, next){
     const token = req.cookies.accessToken
 
-    if(!token){return response(res, false, "token expired")}
+    if(!token){return response(res, false, "token invalid")}
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRETKEY)

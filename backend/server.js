@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
 import { MongoClient, ServerApiVersion } from 'mongodb';
-import {connectDb, closeDbConnection} from  './db.js'
+import {connectDb, closeDbConnection, getDb} from  './db.js'
 import { response } from './response.js'
 
 import express from 'express';
@@ -19,8 +19,13 @@ const PORT = process.env.PORT || 3000
 
 app.use(express.json())
 app.use(cookieParser())
+app.use((err, req, res, next)=>{
+  if(err instanceof SyntaxError && err.status === 400 && 'body' in err){return response(res, false, "invalid JSON format")}
+  next()
+})
+
 app.use(cors({
-  origin: 'https://vocab.arkanafaisal.my.id',  // ganti dengan URL frontend production
+  origin: 'https://vocab.arkanafaisal.my.id', //'http://127.0.0.1:5500',  // ganti dengan URL frontend production
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'], // opsional, untuk batasi method
   allowedHeaders: ['Content-Type'],   // opsional, header yg diizinkan
@@ -31,13 +36,14 @@ app.use(cors({
 
 
 
-app.get('/check', (req, res)=>{
+app.get('/check', async (req, res)=>{
+  
   return res.send("server aktif")
 })
-app.use('/users', await usersRouter)
-app.use('/auth', await authRouter)
-app.use('/profile', await profileRouter)
-app.use('/data', await dataRouter)
+app.use('/users', usersRouter)
+app.use('/auth', authRouter)
+app.use('/profile', profileRouter)
+app.use('/data', dataRouter)
 
 app.get('/test-cookies', (req, res)=>{
   console.log(req.cookies)

@@ -2,10 +2,6 @@ const navbar = Array.from(document.getElementById('navbar').children)
 const sections = Array.from(document.querySelector('main').children)
 
 /////////////////////////////////////////////
-const profileUsername = document.getElementById("profile-username")
-const profileEmail = document.getElementById("profile-email")
-const profileScore = document.getElementById("profile-score")
-const myProfileBtn = document.getElementById("my-profile-btn")
 const signOptions = document.getElementById("sign-options")
 const logOutBtn = document.getElementById("logout-btn")
 
@@ -13,24 +9,24 @@ const logOutBtn = document.getElementById("logout-btn")
 
 /////////////////////////////////////////////
 const leaderboardContainer = document.getElementById("leaderboard-container")
-const userNode = document.getElementById("user-node")
-const refreshLeaderboardBtn = document.getElementById("refresh-leaderboard-btn")
+
 let isOnCooldown = false
 
 
 
 
 /////////////////////////////////////////////
-const vocabWord = document.getElementById('vocab-word')
 const warningText = document.getElementById("warning-text")
 const scoreNumber = document.getElementById('scoreNumber')
 
 let answered
 let stopUpdating = false
+let questions = []
+let batchId = ""
 
 mainFunction()
 async function mainFunction(){
-    await getScore()
+    await setUserData(1)
     await setLeaderboard()
     await setDataByLocalstorage()
 }
@@ -82,105 +78,85 @@ async function mainFunction(){
 
 async function setLeaderboard() {
     if(isOnCooldown){return}
+    isOnCooldown = true
+    
+    const refreshLeaderboardBtn = document.getElementById("refresh-leaderboard-btn")
     changeClass(refreshLeaderboardBtn, ["bg-green-500"], ["bg-red-500"])
+    
+    const result = await startFetching("users/", "GET")
     setTimeout(()=>{
         isOnCooldown = false
         changeClass(refreshLeaderboardBtn, ["bg-red-500"], ["bg-green-500"])
     }, 3000)
-    const result = await startFetching("users/", "GET", null, null)
-    if(!result.success){
-        return
-    }
+    
+    if(!result.success){return}
 
     let allUSers = result.data
     allUSers.sort((a,b)=>b.score - a.score)
-    leaderboardContainer.replaceChildren([])
-
+    
+    const userNode = document.getElementById("user-leaderboard-node").content.firstElementChild
+    const fragment = document.createDocumentFragment()
     for(let i = 0; i< allUSers.length; i++){
         let duplicate = userNode.cloneNode(true)
         duplicate.classList.remove("hidden")
-        duplicate.id = allUSers[i]._id
 
         let list = duplicate.children[0].children
         list[0].innerText = i+1 
         list[1].innerText = allUSers[i].username
         list[2].innerText = allUSers[i].score
 
-        if(allUSers[i].username === profileUsername.innerText){
+        if(allUSers[i].username === leaderboardContainer.dataset.username){
             changeClass(duplicate, ["bg-white"], ["bg-blue-300"])
         }
 
-        leaderboardContainer.appendChild(duplicate)
+        fragment.appendChild(duplicate)
     }
+    leaderboardContainer.replaceChildren([])
+    leaderboardContainer.appendChild(fragment)
 }
 
-
-async function getScore() {
-    const result = await startFetching('profile/get', 'POST')
-    
-    warningText.innerText = result.message
-    changeClass(warningText, ["text-red-600", "text-gray-300"], ["text-blue-600"])
-    
+async function setUserData(attempt = 1) {
+    if(attempt > 3){return alert('error')}
+    const result = await startFetching('profile/me', 'GET')
+    if(!result)return
     if(!result.success){
-        changeClass(warningText, ["text-blue-600", "text-gray-300"], ["text-red-600"])
-        localStorage.setItem("score", 0)
-        scoreNumber.innerText = 0
+        showWarningText(result.message, true)
         
-        if(result.message === "token expired"){
-            const result2 = await startFetching("auth/refresh", "POST")
-            if(!result2.success){
-                setTimeout(getScore, 5000)
-                return
-            }
-            getScore()
-            return
-        }
+        setUserData(attempt + 1)
         return
     }
-    
-    localStorage.setItem("score", result.data.score)
+    showWarningText(result.message)
+
+    document.getElementById('login-button').classList.add('hidden')
+    document.getElementById('logout-button').classList.remove('hidden')
     scoreNumber.innerText = result.data.score
-
-    setLeaderboard()
-    
-    setMyProfile(result.data.username, result.data.email, result.data.score)
-
-    setTimeout(()=>{
-        changeClass(warningText, ["text-red-600", "text-blue-600"], ["text-gray-300"])
-    }, 3000)    
+    leaderboardContainer.dataset.username = result.data.username   
     return
 }
 
-let questions = []
-let batchId = ""
-async function refreshData(attempt) {
-    if(questions.length > 0){return true}
+async function refreshData(attempt = 1) {
     
+    showWarningText('fetching new questions..')
     const result = await startFetching('data/get/', 'GET')
-    if(!result.success && attempt <=3){
-        return refreshData(attempt+1)
-    } else {
-        batchId = result.data[0]
-        questions = result.data[1]
-        localStorage.setItem('batchId', batchId)
-        localStorage.setItem('questions', JSON.stringify(questions))
+    if(!result)return
+    if(!result.success && attempt <=3){return refreshData(attempt+1)}
 
-        return await refreshQuiz()
-    }
-}
+    if(result.data[1].length === 0) {return showWarningText("server error", true)}
 
-async function setDataByLocalstorage(){
-    batchId = localStorage.getItem('batchId')
-    if(!batchId){return await refreshQuiz()}
+    batchId = result.data[0]
+    questions = result.data[1]
+    localStorage.setItem('batchId', batchId)
+    localStorage.setItem('questions', JSON.stringify(questions))
 
-    questions = JSON.parse(localStorage.getItem('questions'))
-    await refreshQuiz()
+    return await refreshQuiz()
 }
 
 const answerBtn = document.querySelectorAll('.answer-button')
 async function refreshQuiz() {
     if(questions.length === 0){await refreshData(1)}
 
+    
+    const vocabWord = document.getElementById('vocab-word')
     vocabWord.innerText = questions[0].vocab
     answerBtn.forEach((el, index) => {
         el.innerText = questions[0].choices[index]
@@ -189,33 +165,102 @@ async function refreshQuiz() {
 }
 
 async function showAnswer(el) {
-    if(answered || questions.length === 0){return}
+    if(answered){return}
     answered = true
+    if(!batchId){
+        batchId = localStorage.getItem('batchId') || 'aselole'
+    }
     try {
         const userAnswer = el.innerText
         const res = await startFetching("data/answer", "POST", {batchId, answer: userAnswer})
+        if(!res) return answered = false
         if(!res.success){
             if(res.message === "batch expired") {
+                showWarningText('questions expired', true)
+                
                 batchId = []
+                questions = []
                 localStorage.removeItem('batchId')
-                await refreshData(1)
+                localStorage.removeItem('questions')
+                setTimeout(()=>{refreshData(1); answered = false}, 2000)
+                return
             }
+
             answered = false
             return
         }
 
-        questions.shift()
-        localStorage.setItem('questions', JSON.stringify(questions))
+        if(questions.length > 0){
+            questions.shift()
+            localStorage.setItem('questions', JSON.stringify(questions))
+        }
         
-        if(res.message !== "correct"){return await answerUI(el, false, res.data)}
-        await answerUI(el, true)
+        
+        if(res.message !== "correct"){answerUI(el, false, res.data)}
+        else{answerUI(el, true)}
+
+        setTimeout(() => {
+            answerBtn.forEach(el => {
+                changeClass(el, ['bg-green-500', 'bg-red-500', 'bg-white'], ['bg-blue-500'])
+            })
+            refreshQuiz()
+            answered = false
+        }, 3000)
     } catch(err) {
-        console.log(err)
-        alert(556)
         answered = false
     }
 }
 
+function setDataByLocalstorage(){
+    batchId = localStorage.getItem('batchId')
+    questions = localStorage.getItem('questions')
+    if(!batchId || !questions){return refreshData(1)}
+    
+    questions = JSON.parse(localStorage.getItem('questions'))
+    refreshQuiz()
+}
+    
+
+
+
+
+
+async function logout(){
+    const response = await startFetching("auth/logout", "DELETE")
+    if(!response.success){return alert("logout gagal, coba lagi")}
+
+    localStorage.removeItem('batchId')
+    localStorage.removeItem('questions')
+    window.location.href = "./sign.html"
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// UI function
 function answerUI(userAnswerEl, isCorrect, correctAnswer = ""){
     answerBtn.forEach(el => {
         changeClass(el, ['bg-blue-500'], ["bg-white"])
@@ -231,14 +276,166 @@ function answerUI(userAnswerEl, isCorrect, correctAnswer = ""){
 
     if(isCorrect){
         scoreNumber.innerText = parseInt(scoreNumber.innerText) + 1
-        profileScore.innerText = scoreNumber.innerText
+    }
+}
+
+function changeClass(element, removed, added){
+    element.classList.remove(...removed)
+    element.classList.add(...added)
+}
+
+function switchToQuiz(isTrue){
+    const quizNavbar = document.getElementById('quiz-navbar')
+    const leaderboardNavbar = document.getElementById('leaderboard-navbar')
+    const quizSection = document.getElementById('quiz-section')
+    const leaderboardSection = document.getElementById('leaderboard-section')
+
+    if(isTrue){
+        leaderboardNavbar.classList.remove('text-white')
+        leaderboardSection.classList.add('hidden')
+        
+        quizNavbar.classList.add('text-white')
+        quizSection.classList.remove('hidden')
+    }else{
+        quizNavbar.classList.remove('text-white')
+        quizSection.classList.add('hidden')
+        
+        leaderboardNavbar.classList.add('text-white')
+        leaderboardSection.classList.remove('hidden')
+    }
+}
+
+let warningTextTimeId
+function showWarningText(text, isError = false){
+    warningText.innerText = text
+    if(isError) {
+        changeClass(warningText, ['text-gray-300', 'text-blue-600'], ['text-red-600'])
+        if(warningTextTimeId){clearTimeout(warningTextTimeId)}
+        return
     }
 
-    setTimeout(() => {
-        answerBtn.forEach(el => {
-            changeClass(el, ['bg-green-500', 'bg-red-500', 'bg-white'], ['bg-blue-500'])
-        })
-        refreshQuiz()
-        answered = false
-    }, 3000)
+    changeClass(warningText, ['text-gray-300', 'text-red-600'], ['text-blue-600'])
+    warningTextTimeId = setTimeout(hideWarningText, 2000)
 }
+
+function hideWarningText(){
+    changeClass(warningText, ['text-red-600', 'text-blue-600'], ['text-gray-300'])
+}
+
+function login(){
+    window.location.href = 'sign.html'
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+////// startFetching function
+
+async function startFetching(endpoint, method, body = null) {
+    const developmentUrl = "http://127.0.0.1:3002/"
+    const productionUrl = "https://vocab-server.arkanafaisal.my.id/"
+    const url = productionUrl
+    try {
+        let options = {
+            method: method,
+            credentials:"include",
+            headers: {
+                'Content-type': 'application/json'
+            }
+        }
+        if(body){options.body = JSON.stringify(body)}
+
+        const response = await fetch(url + endpoint, options)
+        const result = await response.json()
+
+        if(!result.success && (result.message === "token expired" || result.message === "token invalid")){
+            const response2 = await fetch(url + "auth/refresh", {
+                method: "POST",
+                credentials: "include",
+                headers: {'Content-type': 'application/json'}
+            })
+            const result2 = await response2.json()
+            if(!result2.success){
+                if(result2.message === 'refresh token invalid'){
+                    showWarningText('please try re-log', true)
+                                    
+                    document.getElementById('logout-button').classList.add('hidden')
+                }
+                return 
+            }
+            
+            return startFetching(endpoint, method, body)
+        }
+
+        return result
+    } catch(error) {
+        alert(error)
+    }
+}
+    
+

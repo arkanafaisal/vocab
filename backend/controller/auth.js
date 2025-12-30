@@ -4,8 +4,12 @@ import jwt from 'jsonwebtoken'
 
 import { response } from '../response.js';
 import { getDb } from '../db.js'
+import { ObjectId } from "mongodb";
 
 const authController = {}
+
+const sameSite = 'none'
+const secure = true
 
 authController.register = async (req, res) => {
     const { username, password } = req.body;
@@ -24,7 +28,8 @@ authController.register = async (req, res) => {
 
         const insertResult = await db.collection('users').insertOne(newUser)
         if(!insertResult.acknowledged){return response(res, false, "failed to create user")}
-        
+        console.log('REGISTER HIT PID:', process.pid)
+
         return response(res, true, "user created");
     } catch(err) {
         if(err.code === 11000){return response(res, false, "user already exist")}
@@ -53,22 +58,22 @@ authController.login = async (req, res) => {
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            sameSite: 'none', //secure
-            secure: true, //true
+            sameSite, //secure
+            secure, //true
             path: '/',
             maxAge: 10 * 60 * 1000
         })
 
-        if(!req.cookies.refreshToken){
-            const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
-            res.cookie('refreshToken', refreshToken, {
-                httpOnly: true,
-                sameSite: 'none', //secure
-                secure: true, //true
-                path: '/',
-                maxAge: 7 * 24 * 60 * 60 * 1000
-            });
-        }
+    
+        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            sameSite, //secure
+            secure, //true
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        })
+
         return response(res, true, "login successfull")
     } catch(err) {
         console.log(err)
@@ -83,18 +88,32 @@ authController.logout = async (req, res) => {
         path: '/',     
         secure: true,
     })
+    res.clearCookie("accessToken", {
+        httpOnly: true,    
+        sameSite: 'None', 
+        path: '/',     
+        secure: true,
+    })
     return response(res, true, "logout success")
 }
 
 authController.refreshToken = async (req, res) => {
+    if(!req.cookies.refreshToken) return response(res, false, 'refresh token invalid')
     try {
+        console.log('generating new token...')
         const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
+        const id = new ObjectId(decoded.id)
+        const db = getDb()
+
+        const user = db.collection('users').findOne({_id: id})
+        if(!user) return response(res, false, 'refresh token invalid')
+
         const payload = {id: decoded.id}
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
         res.cookie('accessToken', accessToken, {
             httpOnly: true,
-            sameSite: 'Lax', //secure
-            secure: false, //true
+            sameSite, //secure
+            secure, //true
             path: '/',
             maxAge: 10* 60 * 1000
         })

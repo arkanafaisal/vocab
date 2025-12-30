@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log-in</title>
+    <link href="./src/output.css" rel="stylesheet">
+</head>
+<body class="bg-gray-300 max-w-full h-screen flex items-center justify-center">
+    <div class="bg-white px-5 py-4 rounded-lg shadow-xl border-1 border-gray-400" id="login-container">
+        <h1 class="text-3xl text-center">Welcome Back</h1>
+        <form id="login-form" class="flex flex-col gap-1 mt-5 w-full" method="POST">
+            <input name="username" maxlength="15" class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="text" placeholder="username" required>
+            <input name="password" maxlength="255" class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" placeholder="password" required>
+            <p class="text-xs text-red-600 max-w-45 h-4 truncate" id="login-error-message"></p>
+            
+            <input name="submitBtn" class="border-1 rounded-md pl-1 w-20 w-full mt-6 bg-green-500 hover:bg-green-600 cursor-pointer" type="submit" value="submit">
+            <p class="text-xs">
+                Dont have an account?
+                <a class="text-[blue] hover:font-bold cursor-pointer" onclick="switchToLoginContainer(false)">signup</a>
+            </p>
+        </form>
+    </div>
+    <div class="hidden bg-white px-5 py-4 rounded-lg shadow-lg" id="register-container">
+        <h1 class="text-3xl text-center">Create Account</h1>
+        <form id="register-form" class="flex flex-col justify-center mt-8 w-full" method="POST">
+            <div class="flex flex-col gap-2">
+                <input name="username" class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="text" id="username" placeholder="username" maxlength="15" required>
+                <input name="password" class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="password" placeholder="password" maxlength="255" required >
+                <input name="confirmPassword" class="text-md border-1 rounded-md pl-1 w-full box-sizing" type="password" id="confirm-password" placeholder="confirm password" maxlength="255"  required>
+                <p class="text-xs text-red-600 max-w-full h-4" id="register-error-message"></p>
+            </div>
+            <input name="submitBtn" class="border-1 rounded-md pl-1 w-20 w-full mt-4 bg-green-500 hover:bg-green-600 cursor-pointer" type="submit" value="submit">
+            <p class="text-xs mt-2">
+                Already have an account?
+                <a class="text-[blue] hover:font-bold cursor-pointer" onclick="switchToLoginContainer(true)">login</a>
+            </p>
+        </form>
+    </div>
+
+    <script>
+        async function checkSession(){
+            try {
+                const res = await startFetching('profile/me', 'GET')
+                if(!res.success && (res.message === "token expired" || res.message === "token invalid")){
+                    const response2 = await fetch("https://vocab-server.arkanafaisal.my.id/auth/refresh", {
+                        method: "POST",
+                        credentials: "include",
+                        headers: {'Content-type': 'application/json'}
+                    })
+                    const result2 = await response2.json()
+                    if(!result2.success){return}
+                    window.location.href='./'
+                }
+                window.location.href = './'
+            } catch(err) {
+                
+            }
+        }
+        checkSession()
+        
+        async function startFetching(endpoint, method, body = null) {
+            const developmentUrl = "http://127.0.0.1:3002/"
+            const productionUrl = "https://vocab-server.arkanafaisal.my.id/"
+            const url = productionUrl
+            try {
+                let options = {
+                    method: method,
+                    credentials:"include",
+                    headers: {
+                        'Content-type': 'application/json'
+                    }
+                }
+                if(body){options.body = JSON.stringify(body)}
+
+                const response = await fetch(url + endpoint, options)
+                const result = await response.json()
+
+                return result
+            } catch(error) {
+            }
+        }
+
+        const registerContainer = document.getElementById("register-container")
+        const loginContainer = document.getElementById("login-container")
+
+
+        function switchToLoginContainer(isTrue){
+            if(isTrue){
+                registerContainer.classList.add("hidden")
+                loginContainer.classList.remove("hidden")
+                document.title = 'login'
+                return
+            }
+            loginContainer.classList.add("hidden")
+            registerContainer.classList.remove("hidden")
+            document.title = 'register'
+        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // login function
+        const loginForm = document.getElementById("login-form")
+        let loginregisterErrorMessage = document.getElementById('login-error-message')
+
+
+        loginForm.addEventListener('submit', async (event)=>{
+            event.preventDefault()
+            loginForm.submitBtn.disabled = true
+
+            try {
+                username = loginForm.username.value.trim()
+                password = loginForm.password.value.trim()
+    
+                if(!username || !password) return setLoginMessageError('missing fields')
+                if(username.length > 15 || password.length > 255) return setLoginMessageError('invalid input')
+                if(!(/^[a-zA-Z0-9_]+$/.test(username))) return setLoginMessageError('no special character for username')
+                
+                const result = await startFetching("auth/login", "POST", {username, password})
+                setLoginMessageError(result.message)
+                if(!result.success){return}
+    
+                loginregisterErrorMessage.classList.remove("text-red-600")
+                loginregisterErrorMessage.classList.add("text-blue-600")
+                setTimeout(()=>{
+                    window.location.href = "./"
+                }, 2000)
+            } catch(err) {
+                setLoginMessageError("error")
+            } finally {
+                loginForm.submitBtn.disabled = false
+            }
+            
+            
+        })
+        
+        function setLoginMessageError(message){
+            loginregisterErrorMessage.innerHTML = message
+        }
+
+
+
+
+        // register function
+        const registerForm = document.getElementById('register-form')
+
+        const registerErrorMessage = document.getElementById('register-error-message')
+
+
+
+        registerForm.addEventListener('submit', async event => {
+            event.preventDefault()
+            registerForm.submitBtn.disabled = true
+            
+            try {
+                username = registerForm.username.value.trim(),
+                password = registerForm.password.value.trim(),
+                confirmPassword = registerForm.confirmPassword.value.trim()
+    
+                if(!username || !password || !confirmPassword) return setRegisterMessageError('missing fields')
+                if(password !== confirmPassword) return setRegisterMessageError('passwords is not match')
+                if(username.length > 15 || password.length > 255) return setRegisterMessageError('invalid input')
+                if(!(/^[a-zA-Z0-9_]+$/.test(username))) return setRegisterMessageError('no special character for username')
+    
+    
+                const result = await startFetching("auth/register", "POST", {username, password})
+                setRegisterMessageError(result.message)
+                if(!result.success){return}
+                
+                registerErrorMessage.classList.remove("text-red-600")
+                registerErrorMessage.classList.add("text-blue-600")
+                //registerErrorMessage.classList.add('hidden')
+                setTimeout(()=>{
+                    switchToLoginContainer(true)
+                }, 2000)
+            } catch(err) {
+                setRegisterMessageError("error")
+            } finally {
+                registerForm.submitBtn.disabled = false
+            }
+        })
+
+        function setRegisterMessageError(message){
+            registerErrorMessage.innerHTML = message
+        }
+    </script>
+</body>
+</html>

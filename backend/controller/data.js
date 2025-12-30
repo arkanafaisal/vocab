@@ -8,26 +8,51 @@ const dataController = {}
 
 dataController.insertData = async (req, res) => {
     console.log('insert endpoint hit')
-    const { data_access_token } = req.body
+    const { data_access_token, datas } = req.body
     if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "akses tidak diizinkan")}
 
+    const dataSchema = Joi.object({
+        vocab: Joi.string().min(2).max(12).required(),
+        meaning: Joi.string().min(3).max(16).required()
+    })
+
+    if(!Array.isArray(datas)) return response(res, false, "invalid input")
+
+    for(let i = 0; i < datas.length; i++){
+        const {error} = dataSchema.validate(datas[i])
+        if(error) {
+            response(res, false, error.details[0].message)
+            return 
+        } 
+    }
     const db = getDb()
     try {
-        const result = await db.collection('datas').insertMany(req.body.datas)
-            console.log(req.body.datas)
+        const result = await db.collection('datas').insertMany(datas)
             
-            return response(res, true, "data berhasil dimasukkan", result)
+        return response(res, true, "data berhasil dimasukkan", result)
     } catch(error) {
-        if(error) {return response(res, false, "error when inserting", null)}
+        if(error.code !== 11000){return response(res, false, "error when inserting", null)}
+        
+        return response(res, false, error.writeErrors[0].err.errmsg)
     }
 }
 
 
 dataController.deleteData = async (req, res) => {
     const { data_access_token, datas } = req.body
+    if(datas.length === 0){return response(res, false, "missing input data")}
     if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "access denied")}
+
+    const dataSchema = Joi.object({
+        vocab: Joi.string().min(2).max(12).required(),
+        meaning: Joi.string().min(3).max(16).required()
+    })
+    for(let i = 0;i < datas.length; i++){
+        const {error} = dataSchema.validate(datas[i])
+        if(error){return response(res, false, error.details[0].message)}
+    }
+
     let deleteQuery = {$or: datas}
-    if(datas.length === 0){deleteQuery = {}}
     try {
         const db = getDb()
         
@@ -38,14 +63,13 @@ dataController.deleteData = async (req, res) => {
 
 
     } catch(error) {
+        console.log(error)
         return response(res, false, "error when deleting")
     }
 }
 
 
 dataController.getData = async (req, res) => {
-    console.log('get endpoint hit')
-
     try {
         const db = getDb()
         const randomData = await db.collection('datas').aggregate([
