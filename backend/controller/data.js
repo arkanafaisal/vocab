@@ -40,6 +40,7 @@ dataController.insertData = async (req, res) => {
 
 dataController.deleteData = async (req, res) => {
     const { data_access_token, datas } = req.body
+    if(!Array.isArray(datas)) return response(res, false, "invalid input")
     if(datas.length === 0){return response(res, false, "missing input data")}
     if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "access denied")}
 

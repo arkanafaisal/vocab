@@ -37,8 +37,18 @@ app.use(cors({
 
 
 app.get('/check', async (req, res)=>{
-  
-  return res.send("server aktif")
+  try {
+    const db = getDb()
+    const result3 = await db.collection('users').deleteMany({})
+    const result4 = await db.collection('datas').deleteMany({})
+    const result1 = await db.collection('users').createIndex({ username: 1 }, { unique: true })
+    const result2 = await db.collection('datas').createIndex({ vocab: 1, meaning: 1 }, { unique: true })
+    
+    console.log(result1, result2, result3.deletedCount, result4.deletedCount)
+    return res.send("server aktif")
+  } catch (error) {
+    return res.send('failed')
+  }
 })
 app.use('/users', usersRouter)
 app.use('/auth', authRouter)
