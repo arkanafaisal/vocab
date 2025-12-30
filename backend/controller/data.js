@@ -139,6 +139,7 @@ dataController.validateAnswer = async (req, res) => {
             { $inc: { score: 1 } }
         )
         if(!updatedUser.acknowledged || updatedUser.matchedCount === 0 || updatedUser.modifiedCount === 0){return response(res, false, "server error")}
+        await redis.del(`vocab:cache:userData:${req.user.id}`)
 
         return response(res, true, "correct")
     } catch(err) {

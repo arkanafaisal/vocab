@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { response } from '../response.js';
 import { getDb } from '../db.js'
 import { ObjectId } from "mongodb";
+import redis from "../redis.js";
 
 const authController = {}
 
@@ -65,6 +66,7 @@ authController.login = async (req, res) => {
 
     
         const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
+        await redis.set(`vocab:tokens:${refreshToken}`, "", {"EX": (60 * 60 * 168)})
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             sameSite, //secure
@@ -81,6 +83,12 @@ authController.login = async (req, res) => {
 }
 
 authController.logout = async (req, res) => {
+    try {
+        await redis.del(`vocab:tokens:${req.cookies.refreshToken}`)
+    } catch(err){
+        console.log(err)
+        return response(res, false, "logout failed")
+    }
     res.clearCookie("refreshToken", {
         httpOnly: true,    
         sameSite: 'None', 
@@ -100,12 +108,15 @@ authController.refreshToken = async (req, res) => {
     if(!req.cookies.refreshToken) return response(res, false, 'refresh token invalid')
     try {
         console.log('generating new token...')
+        const isOnSession = await redis.get(`vocab:tokens:${req.cookies.refreshToken}`)
+        if(!isOnSession){return response(res, false, "refresh token invalid")}
         const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
         const id = new ObjectId(decoded.id)
         const db = getDb()
 
-        const user = db.collection('users').findOne({_id: id})
+        const user = await db.collection('users').findOne({_id: id})
         if(!user) {
+            await redis.del(`vocab:tokens:${req.cookies.refreshToken}`)
             res.clearCookie("refreshToken", {
                 httpOnly: true,    
                 sameSite: 'None', 
