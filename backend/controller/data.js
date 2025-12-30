@@ -21,7 +21,7 @@ dataController.insertData = async (req, res) => {
     for(let i = 0; i < datas.length; i++){
         const {error} = dataSchema.validate(datas[i])
         if(error) {
-            response(res, false, error.details[0].message)
+            response(res, false, "invalid input at index: " + i)
             return 
         } 
     }
@@ -50,7 +50,9 @@ dataController.deleteData = async (req, res) => {
     })
     for(let i = 0;i < datas.length; i++){
         const {error} = dataSchema.validate(datas[i])
-        if(error){return response(res, false, error.details[0].message)}
+        if(error){ 
+            return response(res, false, "invalid input at index: " + i)
+        }
     }
 
     let deleteQuery = {$or: datas}
