@@ -7,7 +7,6 @@ const authRouter = express.Router();
 //     console.log('auth endpoint hit');
 //     next();
 // });
-console.log('rateLimiting type:', typeof rateLimiting)
     
 authRouter.post('/register',    rateLimiting('register', 15, 3),        authController.register);
 authRouter.post('/login',       rateLimiting('login', 1, 5),            authController.login);
