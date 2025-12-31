@@ -3,7 +3,7 @@ import {response} from "../response.js"
 
 export default function rateLimiting(feature, windowM, limit){
     return async function(req, res, next){
-        const key = "databox:rl:" + feature + ":" + req.ip
+        const key = "vocab:rl:" + feature + ":" + req.ip
         const count = await redis.incr(key)
 
         if (count === 1) {await redis.pExpire(key, (windowM * 60000))}

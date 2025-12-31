@@ -107,7 +107,6 @@ authController.logout = async (req, res) => {
 authController.refreshToken = async (req, res) => {
     if(!req.cookies.refreshToken) return response(res, false, 'refresh token invalid')
     try {
-        console.log('generating new token...')
         const isOnSession = await redis.get(`vocab:tokens:${req.cookies.refreshToken}`)
         if(!isOnSession){return response(res, false, "refresh token invalid")}
         const decoded = jwt.verify(req.cookies.refreshToken, process.env.JWT_REFRESH_SECRETKEY)
