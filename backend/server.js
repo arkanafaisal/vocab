@@ -18,11 +18,9 @@ const app = express();
 const PORT = process.env.PORT || 3000
 
 app.use(express.json())
+app.set('trust proxy', true)
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser())
-app.use((err, req, res, next)=>{
-  if(err instanceof SyntaxError && err.status === 400 && 'body' in err){return response(res, false, "invalid JSON format")}
-  next()
-})
 
 app.use(cors({
   origin: 'https://vocab.arkanafaisal.my.id', //'http://127.0.0.1:5500',  // ganti dengan URL frontend production
@@ -33,6 +31,10 @@ app.use(cors({
   optionsSuccessStatus: 204
 }))
 
+app.use((err, req, res, next)=>{
+  if(err instanceof SyntaxError && err.status === 400 && 'body' in err){return response(res, false, "invalid JSON format")}
+  next()
+})
 
 
 
