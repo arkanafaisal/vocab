@@ -9,6 +9,6 @@ const profileRouter = express.Router()
 //     next()
 // })
 
-profileRouter.get('/me',            rateLimiting('getMyProfile', 1, 60),    verifyJwt, profileController.getData)
+profileRouter.get('/me',            rateLimiting('getMyProfile', 1, 120),    verifyJwt, profileController.getData)
 
 export default profileRouter

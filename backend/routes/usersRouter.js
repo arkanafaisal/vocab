@@ -9,6 +9,6 @@ const usersRouter = express.Router()
 //     next()
 // })
 
-usersRouter.get('/',    rateLimiting("getAllUsers", 1, 45), usersController.getAllUsers)
+usersRouter.get('/',    rateLimiting("getAllUsers", 1, 90), usersController.getAllUsers)
 
 export default usersRouter

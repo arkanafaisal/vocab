@@ -8,9 +8,9 @@ const authRouter = express.Router();
 //     next();
 // });
     
-authRouter.post('/register',    rateLimiting('register', 15, 3),        authController.register);
-authRouter.post('/login',       rateLimiting('login', 1, 5),            authController.login);
-authRouter.delete('/logout',    rateLimiting('logout', 1, 5),          authController.logout);
-authRouter.post('/refresh',     rateLimiting('refreshToken', 10, 3),    authController.refreshToken)
+authRouter.post('/register',    rateLimiting('register', 10, 20),        authController.register);
+authRouter.post('/login',       rateLimiting('login', 5, 20),            authController.login);
+authRouter.delete('/logout',    rateLimiting('logout', 1, 15),          authController.logout);
+authRouter.post('/refresh',     rateLimiting('refreshToken', 1, 30),    authController.refreshToken)
     
 export default authRouter
