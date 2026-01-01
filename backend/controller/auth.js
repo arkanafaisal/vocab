@@ -13,13 +13,13 @@ const sameSite = 'none'
 const secure = true
 
 authController.register = async (req, res) => {
-    const { username, password } = req.body;
     const userSchema = Joi.object({
-        username: Joi.string().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
-        password: Joi.string().max(255).required()
+        username: Joi.string().trim().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
+        password: Joi.string().trim().max(255).required()
     })
-    const {error, value} = userSchema.validate({username, password})
+    const {error, value} = userSchema.validate(req.body)
     if(error){return response(res, false, error.details[0].message)}
+    const { username, password } = value
 
     try {
         const db = getDb()
@@ -38,13 +38,13 @@ authController.register = async (req, res) => {
 }
 
 authController.login = async (req, res) => {
-    const { username, password } = req.body
     const loginSchema = Joi.object({
-        username: Joi.string().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
-        password: Joi.string().max(255).required()
+        username: Joi.string().trim().max(15).pattern(/^[a-zA-Z0-9]+$/).required(),
+        password: Joi.string().trim().max(255).required()
     })
-    const { error, value } = loginSchema.validate({username, password})
+    const { error, value } = loginSchema.validate(req.body)
     if(error){return response(res, false, error.details[0].message)}
+    const {username, password} = value
 
     try {
         const db = getDb()
@@ -66,13 +66,13 @@ authController.login = async (req, res) => {
 
     
         const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
-        await redis.set(`vocab:tokens:${refreshToken}`, "", {"EX": (60 * 60 * 168)})
+        await redis.set(`vocab:tokens:${refreshToken}`, "a", {"EX": (60 * 60 * 168)})
         res.cookie('refreshToken', refreshToken, {
             httpOnly: true,
             sameSite, //secure
             secure, //true
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000
+            maxAge: 168 * 60 * 60 * 1000
         })
 
         return response(res, true, "login successfull")

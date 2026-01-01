@@ -118,7 +118,7 @@ async function setLeaderboard() {
 async function setUserData(attempt = 1) {
     if(attempt > 3){return alert('error')}
     const result = await startFetching('profile/me', 'GET')
-    if(!result)return
+    if(result.code && result.code === 429){return}
     if(!result.success){
         showWarningText(result.message, true)
         
@@ -138,8 +138,12 @@ async function refreshData(attempt = 1) {
     
     showWarningText('fetching new questions..')
     const result = await startFetching('data/get/', 'GET')
-    if(!result)return
-    if(!result.success && attempt <=3){return refreshData(attempt+1)}
+    if(result.code && result.code === 429){return}
+    if(!result.success && attempt <=3){
+        showWarningText(res.message, true)
+        refreshData(attempt+1)
+        return
+    }
 
     if(result.data[1].length === 0) {return showWarningText("server error", true)}
 
@@ -173,11 +177,10 @@ async function showAnswer(el) {
     try {
         const userAnswer = el.innerText
         const res = await startFetching("data/answer", "POST", {batchId, answer: userAnswer})
-        if(!res) return answered = false
+        if(result.code && result.code === 429){return answered = false}
         if(!res.success){
+            showWarningText(res.message, true)
             if(res.message === "batch expired") {
-                showWarningText('questions expired', true)
-                
                 batchId = []
                 questions = []
                 localStorage.removeItem('batchId')
@@ -227,7 +230,7 @@ function setDataByLocalstorage(){
 
 async function logout(){
     const response = await startFetching("auth/logout", "DELETE")
-    if(!response.success){return alert("logout gagal, coba lagi")}
+    if(!response.success){return alert(res.message)}
 
     localStorage.removeItem('batchId')
     localStorage.removeItem('questions')
@@ -413,23 +416,29 @@ async function startFetching(endpoint, method, body = null) {
         const response = await fetch(url + endpoint, options)
         const result = await response.json()
 
-        if(!result.success && (result.message === "token expired" || result.message === "token invalid")){
-            const response2 = await fetch(url + "auth/refresh", {
-                method: "POST",
-                credentials: "include",
-                headers: {'Content-type': 'application/json'}
-            })
-            const result2 = await response2.json()
-            if(!result2.success){
-                if(result2.message === 'refresh token invalid'){
-                    showWarningText('please try re-log', true)
-                                    
-                    document.getElementById('logout-button').classList.add('hidden')
-                }
-                return 
+        if(!result.success){
+            if(result.code && result.code === 429){
+                showWarningText("too many request, please try again later")
+                return {success:false, code:429}
             }
-            
-            return startFetching(endpoint, method, body)
+            if(result.message === "token expired" || result.message === "token invalid"){
+                const response2 = await fetch(url + "auth/refresh", {
+                    method: "POST",
+                    credentials: "include",
+                    headers: {'Content-type': 'application/json'}
+                })
+                const result2 = await response2.json()
+                if(!result2.success){
+                    if(result2.message === 'refresh token invalid'){
+                        showWarningText('please try re-log', true)
+                                        
+                        document.getElementById('logout-button').classList.add('hidden')
+                    }
+                    return 
+                }
+                
+                return startFetching(endpoint, method, body)
+            }
         }
 
         return result

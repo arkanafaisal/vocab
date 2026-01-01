@@ -10,13 +10,14 @@ dataController.insertData = async (req, res) => {
     console.log('insert endpoint hit')
     const { data_access_token, datas } = req.body
     if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "akses tidak diizinkan")}
+    if(!Array.isArray(datas)) return response(res, false, "invalid input")
+    if(datas.length === 0){return response(res, false, "missing input data")}
 
     const dataSchema = Joi.object({
-        vocab: Joi.string().min(2).max(12).required(),
-        meaning: Joi.string().min(3).max(16).required()
+        vocab: Joi.string().trim().min(2).max(12).required(),
+        meaning: Joi.string().trim().min(3).max(16).required()
     })
 
-    if(!Array.isArray(datas)) return response(res, false, "invalid input")
 
     for(let i = 0; i < datas.length; i++){
         const {error} = dataSchema.validate(datas[i])
@@ -31,9 +32,12 @@ dataController.insertData = async (req, res) => {
             
         return response(res, true, "data berhasil dimasukkan", result)
     } catch(error) {
-        if(error.code !== 11000){return response(res, false, "error when inserting", null)}
+        if(error.code !== 11000){return response(res, false, error.writeErrors[0].err.errmsg)}
+            
+            
+        return response(res, false, "error when inserting",)
         
-        return response(res, false, error.writeErrors[0].err.errmsg)
+        
     }
 }
 
@@ -45,8 +49,8 @@ dataController.deleteData = async (req, res) => {
     if(data_access_token !== process.env.DATA_ACCESS_TOKEN){return response(res, false, "access denied")}
 
     const dataSchema = Joi.object({
-        vocab: Joi.string().min(2).max(12).required(),
-        meaning: Joi.string().min(3).max(16).required()
+        vocab: Joi.string().trim().min(2).max(12).required(),
+        meaning: Joi.string().trim().min(3).max(16).required()
     })
     for(let i = 0;i < datas.length; i++){
         const {error} = dataSchema.validate(datas[i])
@@ -140,6 +144,7 @@ dataController.validateAnswer = async (req, res) => {
         )
         if(!updatedUser.acknowledged || updatedUser.matchedCount === 0 || updatedUser.modifiedCount === 0){return response(res, false, "server error")}
         await redis.del(`vocab:cache:userData:${req.user.id}`)
+        await redis.del(`vocab:cache:allUserData`)
 
         return response(res, true, "correct")
     } catch(err) {
