@@ -177,7 +177,7 @@ async function showAnswer(el) {
     try {
         const userAnswer = el.innerText
         const res = await startFetching("data/answer", "POST", {batchId, answer: userAnswer})
-        if(result.code && result.code === 429){return answered = false}
+        if(res.code && res.code === 429){return answered = false}
         if(!res.success){
             showWarningText(res.message, true)
             if(res.message === "batch expired") {
