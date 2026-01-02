@@ -419,7 +419,7 @@ async function startFetching(endpoint, method, body = null) {
         if(!result.success){
             if(result.code && result.code === 429){
                 showWarningText("too many request, please try again later")
-                return {success:false, code:429}
+                return result
             }
             if(result.message === "token expired" || result.message === "token invalid"){
                 const response2 = await fetch(url + "auth/refresh", {
@@ -434,7 +434,7 @@ async function startFetching(endpoint, method, body = null) {
                                         
                         document.getElementById('logout-button').classList.add('hidden')
                     }
-                    return 
+                    return {success: false, code: 429}
                 }
                 
                 return startFetching(endpoint, method, body)
