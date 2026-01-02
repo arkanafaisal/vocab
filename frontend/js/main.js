@@ -145,7 +145,7 @@ async function refreshData(attempt = 1) {
         return
     }
 
-    if(result.questions.length === 0) {return showWarningText("server error", true)}
+    if(result.data.questions.length === 0) {return showWarningText("server error", true)}
 
     batchId = result.data.batchId
     questions = result.data.questions
