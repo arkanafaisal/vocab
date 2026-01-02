@@ -19,7 +19,7 @@ export const remove = Joi.object({
 })
 
 
-const answer = Joi.object({
+export const answer = Joi.object({
     batchId: Joi.string().required(),
     answer: Joi.string().trim().min(2).max(12).required()
 })

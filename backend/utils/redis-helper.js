@@ -7,7 +7,7 @@ const redisType = {
     "answers": {prefix: 'vocab:answers:', ttl: 60 * 10}
 }
 
-async function get(type, key){
+export async function get(type, key){
     try {
         const rawData = await redis.get(redisType[type].prefix + key)
         if(!rawData){return {ok: false}}
@@ -18,7 +18,7 @@ async function get(type, key){
     }
 }
 
-async function set(type, key, data){
+export async function set(type, key, data){
     try {
         await redis.set(redisType[type].prefix + key, JSON.stringify(data), {"EX": redisType[type].ttl})
         return {ok: true} 
@@ -28,7 +28,7 @@ async function set(type, key, data){
     }
 }
 
-async function del(type, key){
+export async function del(type, key){
     try {
         await redis.del(redisType[type].prefix + key)
         return {ok: true} 

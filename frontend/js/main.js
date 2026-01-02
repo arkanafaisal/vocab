@@ -117,7 +117,7 @@ async function setLeaderboard() {
 
 async function setUserData(attempt = 1) {
     if(attempt > 3){return alert('error')}
-    const result = await startFetching('profile/me', 'GET')
+    const result = await startFetching('users/me', 'GET')
     if(result.code && result.code === 429){return}
     if(!result.success){
         showWarningText(result.message, true)
@@ -147,8 +147,8 @@ async function refreshData(attempt = 1) {
 
     if(result.data[1].length === 0) {return showWarningText("server error", true)}
 
-    batchId = result.data[0]
-    questions = result.data[1]
+    batchId = result.data.batchId
+    questions = result.data.questions
     localStorage.setItem('batchId', batchId)
     localStorage.setItem('questions', JSON.stringify(questions))
 
