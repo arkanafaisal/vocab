@@ -1,13 +1,10 @@
 import 'dotenv/config';
-
-import { MongoClient, ServerApiVersion } from 'mongodb';
-import {connectDb, closeDbConnection, getDb} from  './db.js'
-import { response } from './response.js'
+import {connectDb, closeDbConnection} from  './config/db.js'
+import { response } from './utils/response.js'
 
 import express from 'express';
 import  authRouter from './routes/authRouter.js' 
-import  usersRouter from './routes/usersRouter.js' 
-import profileRouter from './routes/profileRouter.js';
+import  userRouter from './routes/usersRouter.js'
 import dataRouter from './routes/dataRouter.js';
 import cors from 'cors'
 import cookieParser from 'cookie-parser';
@@ -43,9 +40,8 @@ app.get('/check', async (req, res)=>{
 })
 
 
-app.use('/users', usersRouter)
+app.use('/users', userRouter)
 app.use('/auth', authRouter)
-app.use('/profile', profileRouter)
 app.use('/data', dataRouter)
 
 app.get('/test-cookies', (req, res)=>{

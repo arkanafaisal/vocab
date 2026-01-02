@@ -1,14 +1,13 @@
 import express from 'express'
 
-import usersController from '../controller/users.js'
+import verifyJwt from '../middleware/jwtVerify.js'
 import rateLimiting from '../middleware/rateLimiting.js'
 
-const usersRouter = express.Router()
-// usersRouter.use((req,res,next)=>{
-//     console.log('users endpoint hit')
-//     next()
-// })
+import userController from '../controller/user-controller.js'
 
-usersRouter.get('/',    rateLimiting("getAllUsers", 1, 90), usersController.getAllUsers)
+const userRouter = express.Router()
 
-export default usersRouter
+userRouter.get('/',    rateLimiting("getAllUsers", 1, 90),     userController.getAllUsers)
+userRouter.get('/me',  rateLimiting('getMyProfile', 1, 120),   verifyJwt, userController.getMyData)
+
+export default userRouter

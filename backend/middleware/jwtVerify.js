@@ -1,7 +1,6 @@
-import express from 'express'
 import jwt from 'jsonwebtoken'
 
-import { response } from '../response.js'
+import { response } from '../utils/response.js'
 
 function verifyJwt(req, res, next){
     const token = req.cookies.accessToken

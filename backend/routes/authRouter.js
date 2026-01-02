@@ -1,12 +1,10 @@
 import express from 'express';
-import authController from '../controller/auth.js';
+
 import rateLimiting from '../middleware/rateLimiting.js';
 
-const authRouter = express.Router();
-// authRouter.use('/', (req, res, next) => {
-//     console.log('auth endpoint hit');
-//     next();
-// });
+import authController from '../controller/auth-controller.js';
+
+const authRouter = express.Router()
     
 authRouter.post('/register',    rateLimiting('register', 10, 20),        authController.register);
 authRouter.post('/login',       rateLimiting('login', 5, 20),            authController.login);

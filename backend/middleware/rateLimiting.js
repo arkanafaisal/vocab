@@ -1,5 +1,5 @@
-import redis from "../redis.js"
-import {response} from "../response.js"
+import redis from "../config/redis.js"
+import {response} from "../utils/response.js"
 
 export default function rateLimiting(feature, windowM, limit){
     return async function(req, res, next){
