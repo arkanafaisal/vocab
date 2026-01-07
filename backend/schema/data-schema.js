@@ -21,5 +21,5 @@ export const remove = Joi.object({
 
 export const answer = Joi.object({
     batchId: Joi.string().required(),
-    answer: Joi.string().trim().min(2).max(12).required()
+    answer: Joi.string().trim().min(3).max(16).required()
 })
