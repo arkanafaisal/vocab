@@ -413,9 +413,6 @@
   .hidden {
     display: none;
   }
-  .table {
-    display: table;
-  }
   .h-2 {
     height: calc(var(--spacing) * 2);
   }
@@ -440,9 +437,6 @@
   .h-\[75vh\] {
     height: 75vh;
   }
-  .h-dvh {
-    height: 100dvh;
-  }
   .h-full {
     height: 100%;
   }
@@ -463,9 +457,6 @@
   }
   .max-h-\[90\%\] {
     max-height: 90%;
-  }
-  .min-h-0 {
-    min-height: calc(var(--spacing) * 0);
   }
   .min-h-\[44px\] {
     min-height: 44px;
@@ -493,12 +484,6 @@
   }
   .w-\[25\%\] {
     width: 25%;
-  }
-  .w-\[30\%\] {
-    width: 30%;
-  }
-  .w-\[55\%\] {
-    width: 55%;
   }
   .w-\[60\%\] {
     width: 60%;
@@ -805,12 +790,6 @@
   .border-gray-600 {
     border-color: var(--color-gray-600);
   }
-  .border-indigo-900\/50 {
-    border-color: color-mix(in srgb, oklch(35.9% 0.144 278.697) 50%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      border-color: color-mix(in oklab, var(--color-indigo-900) 50%, transparent);
-    }
-  }
   .border-orange-500 {
     border-color: var(--color-orange-500);
   }
@@ -907,9 +886,6 @@
   .bg-dark-900\/80 {
     background-color: color-mix(in oklab, #0f172a 80%, transparent);
   }
-  .bg-dark-900\/95 {
-    background-color: color-mix(in oklab, #0f172a 95%, transparent);
-  }
   .bg-emerald-500 {
     background-color: var(--color-emerald-500);
   }
@@ -942,12 +918,6 @@
   }
   .bg-green-600 {
     background-color: var(--color-green-600);
-  }
-  .bg-indigo-500\/10 {
-    background-color: color-mix(in srgb, oklch(58.5% 0.233 277.117) 10%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      background-color: color-mix(in oklab, var(--color-indigo-500) 10%, transparent);
-    }
   }
   .bg-indigo-600 {
     background-color: var(--color-indigo-600);
@@ -1102,9 +1072,6 @@
   }
   .p-6 {
     padding: calc(var(--spacing) * 6);
-  }
-  .px-0 {
-    padding-inline: calc(var(--spacing) * 0);
   }
   .px-2 {
     padding-inline: calc(var(--spacing) * 2);
@@ -1312,9 +1279,6 @@
   .text-indigo-400 {
     color: var(--color-indigo-400);
   }
-  .text-indigo-500 {
-    color: var(--color-indigo-500);
-  }
   .text-orange-200 {
     color: var(--color-orange-200);
   }
@@ -1477,12 +1441,6 @@
       --tw-shadow-color: color-mix(in oklab, var(--color-indigo-900) var(--tw-shadow-alpha), transparent);
     }
   }
-  .shadow-indigo-900\/20 {
-    --tw-shadow-color: color-mix(in srgb, oklch(35.9% 0.144 278.697) 20%, transparent);
-    @supports (color: color-mix(in lab, red, red)) {
-      --tw-shadow-color: color-mix(in oklab, color-mix(in oklab, var(--color-indigo-900) 20%, transparent) var(--tw-shadow-alpha), transparent);
-    }
-  }
   .shadow-indigo-900\/50 {
     --tw-shadow-color: color-mix(in srgb, oklch(35.9% 0.144 278.697) 50%, transparent);
     @supports (color: color-mix(in lab, red, red)) {
@@ -1511,11 +1469,6 @@
     --tw-drop-shadow-size: drop-shadow(0 3px 3px var(--tw-drop-shadow-color, rgb(0 0 0 / 0.12)));
     --tw-drop-shadow: drop-shadow(var(--drop-shadow-md));
     filter: var(--tw-blur,) var(--tw-brightness,) var(--tw-contrast,) var(--tw-grayscale,) var(--tw-hue-rotate,) var(--tw-invert,) var(--tw-saturate,) var(--tw-sepia,) var(--tw-drop-shadow,);
-  }
-  .backdrop-blur {
-    --tw-backdrop-blur: blur(8px);
-    -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
-    backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
   }
   .backdrop-blur-md {
     --tw-backdrop-blur: blur(var(--blur-md));
@@ -1823,11 +1776,6 @@
   .md\:inline {
     @media (width >= 48rem) {
       display: inline;
-    }
-  }
-  .md\:max-h-\[85vh\] {
-    @media (width >= 48rem) {
-      max-height: 85vh;
     }
   }
   .md\:w-\[60\%\] {
