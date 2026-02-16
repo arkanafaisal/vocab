@@ -4,7 +4,6 @@ function response(res, success, message, data = null, code = null){
         message: message,
     }
     if(data){payload.data = data}
-    if(code){payload.code = code}
-    return res.json(payload)
+    return res.status(code || 200).json(payload)
 }
 export { response };

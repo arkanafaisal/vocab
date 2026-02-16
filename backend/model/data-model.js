@@ -1,23 +1,22 @@
-import { getDb } from "../config/db.js"
+import db from "../config/db.js"
 
 
 
 export async function insertData({datas}) {
     try {
-        const db = getDb()
-        const {insertedCount} = await db.collection('datas').insertMany(datas)
-        return insertedCount
+        const flatValues = datas.map(data => [data.vocab, data.meaning]).flat();
+        const [{affectedRows}] = await db.query(`INSERT INTO data (vocab, meaning) VALUES ${datas.map(()=>'(?,?)').join(', ')}`, flatValues)
+        return affectedRows
     } catch(err) {
-        if(err.code !== 11000){throw new Error( err.writeErrors?.[0]?.err?.errmsg || err.message || "Insert failed")}
+        if(err.code === "ER_DUP_ENTRY"){throw new Error(err.message)}
         throw err
     }
 }
 
 export async function deleteData({datas}) {
     try {
-        const db = getDb()
-        const {deletedCount} = await db.collection('datas').deleteMany({$or: datas})
-        return deletedCount
+        const [{affectedRows}] = await db.query(`DELETE FROM data WHERE vocab IN (${datas.map(() => '?').join(',')})`, datas)
+        return affectedRows
     } catch(err) {
         throw err
     }
@@ -25,15 +24,8 @@ export async function deleteData({datas}) {
 
 export async function getRandomQuizData() {
     try {
-        const db = getDb()
-        const randomData = await db.collection('datas').aggregate([
-            {$project: {_id: 0, vocab: 1, meaning: 1}},
-            {$sample: {size : 5}}
-        ]).toArray()
-        const randomMeaning = await db.collection('datas').aggregate([
-            {$project: {_id: 0, meaning: 1}},
-            {$sample: {size : 5*4}}
-        ]).toArray()
+        const [randomData] = await db.query("SELECT vocab, meaning FROM data ORDER BY RAND() LIMIT 15")
+        const [randomMeaning] = await db.query("SELECT meaning FROM data ORDER BY RAND() LIMIT 60")
         let randomMeaning2 = randomMeaning.map(item => item.meaning)
         return {randomData, randomMeaning: randomMeaning2}
     } catch (err) {

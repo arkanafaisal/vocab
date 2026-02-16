@@ -1,0 +1,80 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Main Page</title>
+    <link href="./src/output.css" rel="stylesheet">
+    <script src="https://kit.fontawesome.com/33aaf20e7f.js" crossorigin="anonymous"></script>
+</head>
+<body class="bg-gray-300 max-w-screen h-screen min-h-screen overflow-hidden">
+    <header class="w-full absolute top-0 left-0 bg-gray-900 text-gray-400 shadow-md h-16 flex">
+        <ul class="flex justify-evenly items-center w-full h-full text-xl md:text-2xl" id="navbar">
+            <li class="selected text-white cursor-pointer hover:text-white transition-colors duration-200" onclick="switchToQuiz(true)" id="quiz-navbar">Play</li>
+            <li class="cursor-pointer hover:text-white transition-colors duration-200" onclick="switchToQuiz(false)" id="leaderboard-navbar">Leaderboard</li>
+        </ul>
+        <div class="h-full flex items-center mr-4 text-xs">
+            <button id="login-button" class=" cursor-pointer hover:text-white" onclick="login()"><i class="fa-solid fa-right-to-bracket text-lg"></i><h2 >login</h2></button>
+            <button id="logout-button" class="hidden cursor-pointer hover:text-white" onclick="logout()"><i class="fa-solid fa-right-from-bracket text-lg"></i><h2 >logout</h2></button>
+            
+        </div>
+    </header>
+
+    <main class="h-screen overflow-hidden pt-16">
+
+        <section class="h-full flex flex-col flex-1 items-center" id="quiz-section">
+            
+            <div class="flex relative w-full justify-center items-center">
+                <div class="max-w-full mt-2 px-5 rounded-2xl text-md text-2xl top-0 bg-white shadow-md flex items-center py-2 gap-2 justify-center">
+                    <h2>Score: </h2>
+                    <h2 class="" id="scoreNumber">0</h2>
+                </div>
+                
+            </div>
+            <p class="text-sm text-red-600" id="warning-text">checking session...</p>
+
+            <div class="flex-1 w-full flex justify-center items-center">
+                <div class="max-w-[80%]  box-border border border-gray-300 rounded-2xl px-5 py-6 bg-white text-gray-900 flex flex-col items-center shadow-lg" id="container">
+                <h1 class="text-2xl sm:text-3xl ">Cari Arti Dari Kata:</h1>
+                <h2 class="text-3xl sm:text-4xl font-bold my-1 sm:my-4" id="vocab-word">Example</h2>
+                <fieldset id="answer-fieldset">
+                    <ul class="mt-8 sm:mt-10 flex flex-col items-center justify-center gap-1 text-white text-md sm:text-xl" id="answer">
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)">answer number 1</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)">answer number 2</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >answer number 3</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >answer number 3</button></li>
+                        <li><button class="answer-button px-4 py-1 bg-blue-500  rounded-xl cursor-pointer transition-colors duration-500" onclick="showAnswer(this)" >answer number 3</button></li>
+                    </ul>
+                </fieldset>
+                </div>
+            </div>
+        </section>
+
+        <section class="hidden h-full flex-1 text-center flex flex-col items-center text-black" id="leaderboard-section">
+            
+            <div class="text-xl mt-2 mb-1 w-[90%] md:w-[60%] md:text-2xl bg-gray-700 text-gray-100 rounded-lg py-1 px-2 border-1 border-gray-600 box-border">
+                <ul class="flex gap-2 justify-between">
+                    <li class="flex-5">rank</li>
+                    <li class="flex-19">username</li>
+                    <li class="flex-8">score</li>
+                </ul>
+            </div>
+            <div class="px-2 overflow-auto w-[90%] flex-1 max-h-[90%] md:w-[60%] md:px-4 flex flex-col gap-1" id="leaderboard-container">
+                
+            </div>
+            <div class="bg-green-500 w-[90%] md:w-[60%] cursor-pointer my-1 px-2 py-1 rounded-lg transition-colors duration-500 absolute bottom-1" onclick="setLeaderboard()" id="refresh-leaderboard-btn">refresh leaderboard</div>
+        </section>
+    </main>
+
+    <template  id="user-leaderboard-node">
+        <div class="hidden cursor-pointer text-md md:text-2xl bg-white rounded-xl p-1 border-1 border-gray-600 box-border">
+            <ul class="flex gap-2 justify-between">
+                <li class="flex-2"></li>
+                <li class="flex-10 overflow-hidden"></li>
+                <li class="flex-3"></li>
+            </ul>
+        </div>
+    </template>
+<script src="./js/main.js"></script>
+</body>
+</html> -->

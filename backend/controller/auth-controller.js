@@ -11,19 +11,17 @@ import { response } from '../utils/response.js';
 
 const authController = {}
 
-const isProduction = true
-
 const cookieOptions = {
     accessToken: {
         httpOnly: true,
-        sameSite: isProduction? 'Lax' : 'none',
+        sameSite: 'strict',
         secure: true,
         path: '/',
         maxAge: 10* 60 * 1000
     },
     refreshToken: {
         httpOnly: true,
-        sameSite: isProduction? 'Lax' : 'none',
+        sameSite: 'strict',
         secure: true,
         path: '/',
         maxAge: 168 * 60 * 60 * 1000
@@ -49,12 +47,21 @@ authController.register = async (req, res) => {
 }
 
 authController.login = async (req, res) => {
-    const {ok, value, message} = validate(userSchema.user, req.body)
-    if(!ok){return response(res, false, message)}
+    const { username, email, password } = req.body
+
+    const type = username ? 'username' : 'email'
+    const identifier = username || email
+
+    const { ok, message } = validate(
+        username ? userSchema.user : userSchema.userwithEmail,
+        req.body
+    )
+    if (!ok) return response(res, false, message)
+
 
 
     try {
-        const user = await UserModel.authenticateUser(value)
+        const user = await UserModel.authenticateUser(type, identifier, password)
         if(!user){return response(res, false, "username or password incorrect")}
     
         const payload = {id: user.id}
@@ -67,7 +74,7 @@ authController.login = async (req, res) => {
         res.cookie('accessToken', accessToken, cookieOptions.accessToken)
         res.cookie('refreshToken', refreshToken, cookieOptions.refreshToken)
 
-        return response(res, true, "login successfull")
+        return response(res, true, "login successfull", {username: user.username, score: user.score})
 
 
     } catch(err) {
@@ -101,8 +108,8 @@ authController.refreshToken = async (req, res) => {
         
         
         
-        const user = await UserModel.getUserById({id: decodedJwt.id})
-        if(!user) {
+        const isExist = await UserModel.verifyUserById({id: decodedJwt.id})
+        if(!isExist) {
             await redisHelper.del('tokens', refreshToken)
             res.clearCookie("refreshToken", cookieOptions.refreshToken)
             res.clearCookie("accessToken", cookieOptions.accessToken)
@@ -111,7 +118,7 @@ authController.refreshToken = async (req, res) => {
         }
 
 
-        const payload = {id: user.id}
+        const payload = {id: decodedJwt.id}
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
         res.cookie('accessToken', accessToken, cookieOptions.accessToken)
 

@@ -21,13 +21,9 @@ userController.getAllUsers = async (req, res) => {
 }
 userController.getMyData = async (req, res) => {
     try {
-        const {ok, data} = await redisHelper.get('cache', `userData:${req.user.id}`)
-        if(ok){return response(res, true, 'retrieved your profile', data)}
-        
         const user = await UserModel.getMyData({id: req.user.id})
         if(!user){return response(res, false, "user not found", null, 404)}
 
-        await redisHelper.set('cache', `userData:${req.user.id}`, user)
         return response(res, true, 'retrieved your profile', user)
     } catch(err) {
         return response(res, false, "server error", null, 500)

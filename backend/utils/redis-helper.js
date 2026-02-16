@@ -2,9 +2,9 @@ import redis from "../config/redis.js"
 
 
 const redisType = {
-    "cache": {prefix: 'vocab:cache:', ttl: 60 * 10},
+    "cache": {prefix: 'vocab:cache:', ttl: 30},
     "tokens": {prefix: 'vocab:tokens:', ttl: 60 * 60 * 168},
-    "answers": {prefix: 'vocab:answers:', ttl: 60 * 10}
+    "quiz": {prefix: 'vocab:quiz:', ttl: 60 * 15}
 }
 
 export async function get(type, key){

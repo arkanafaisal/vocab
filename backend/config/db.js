@@ -1,42 +1,16 @@
-import { MongoClient, ServerApiVersion } from 'mongodb'
+import mysql from 'mysql2/promise'
 
-const uri = process.env.MONGO_URI;
-const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
-});
+const db = mysql.createPool({
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DB,
 
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
 
-let db
-async function connectDb(){
-    if(db){return}
-        try{
-            console.log('Connecting to MongoDB...');
-            await client.connect()
-            console.log('Connected to MongoDB');
-            db = client.db('account')
-        }catch(error){
-            console.error("Error connecting to MongoDB:", error);
-            throw error; // Re-throw the error for handling in the calling function
-        }
-}
+  connectTimeout: 10000
+})
 
-
-async function closeDbConnection() {
-    try {
-        console.log('Closing MongoDB connection...');
-        await client.close();
-    } catch (error) {
-        console.error("Error closing MongoDB connection:", error);
-    }
-}
-
-function getDb() {
-    if(!db) throw new error('db is not ready yet')
-    return db
-}
-
-export {connectDb, closeDbConnection, getDb}
+export default db;
