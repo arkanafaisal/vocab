@@ -53,7 +53,7 @@ authController.login = async (req, res) => {
     const identifier = username || email
 
     const { ok, message } = validate(
-        username ? userSchema.user : userSchema.userwithEmail,
+        username ? userSchema.userWithUsername : userSchema.userwithEmail,
         req.body
     )
     if (!ok) return response(res, false, message)
