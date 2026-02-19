@@ -55,3 +55,23 @@ app.use('/api/data', dataRouter)
 app.get('/api/test-cookies', (req, res)=>{
   console.log(req.cookies)
 })
+
+
+import redis from "./config/redis.js"
+
+async function cleanup() {
+  console.log("opi")
+  try {
+    const keys = await redis.keys("vocab:socket:*")
+    console.log(keys)
+    if (keys.length) await redis.del(...keys)
+    await redis.quit()
+  } catch (err) {
+    console.error(err);
+  } finally {
+    process.exit(0)
+  }
+}
+
+process.on("SIGINT", cleanup);
+process.on("SIGTERM", cleanup);

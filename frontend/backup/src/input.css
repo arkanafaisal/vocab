@@ -1,13 +1,3 @@
-@import "tailwindcss";
-
-/* PENTING: Baris ini memberitahu Tailwind v4 untuk memuat
-  konfigurasi dari file JavaScript legacy (v3 style).
-*/
-@config "../tailwind.config.js";
-
-button{
-    cursor: pointer;
-}
 
 .custom-scrollbar::-webkit-scrollbar { width: 4px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }

@@ -1,5 +1,7 @@
 
 import jwt from 'jsonwebtoken'
+import redis from '../config/redis.js'
+import {randomUUID} from 'crypto'
 
 
 import * as redisHelper from "../utils/redis-helper.js"
@@ -8,6 +10,7 @@ import * as userSchema from "../schema/user-schema.js";
 
 import { validate } from "../utils/validate.js";
 import { response } from '../utils/response.js';
+import { forceDisconnect } from '../config/socket.js';
 
 const authController = {}
 
@@ -66,15 +69,21 @@ authController.login = async (req, res) => {
     
         const payload = {id: user.id}
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
-        const refreshToken = jwt.sign(payload, process.env.JWT_REFRESH_SECRETKEY, {expiresIn:"168h"})
+        const refreshToken = randomUUID()
 
-        const {ok: ok2} = await redisHelper.set('tokens', refreshToken, 'a')
+        const {ok: ok2} = await redisHelper.set('tokens', refreshToken, user.id)
         if(!ok2){return response(res, false, "error, please try again")}
         
         res.cookie('accessToken', accessToken, cookieOptions.accessToken)
         res.cookie('refreshToken', refreshToken, cookieOptions.refreshToken)
 
-        return response(res, true, "login successfull", {username: user.username, score: user.score})
+
+        const {ok:ok3, data: socketId} = await redisHelper.get("socket", user.username)
+        if(ok3){
+            await forceDisconnect(socketId)
+            await redisHelper.del("socket", user.username)
+        }
+        return response(res, true, "login successfull", user)
 
 
     } catch(err) {
@@ -84,33 +93,52 @@ authController.login = async (req, res) => {
 }
 
 authController.logout = async (req, res) => {
+    const refreshToken = req.cookies.refreshToken
+    if(refreshToken){
+        (async () => {
+            for(let i = 0; i < 3; i++){
+                const {ok} = await redisHelper.del('tokens', refreshToken)
+                if(ok) break
+                await new Promise(r => setTimeout(r, 500))
+            }
+        })()
+    }
+
     res.clearCookie("refreshToken", cookieOptions.refreshToken)
     res.clearCookie("accessToken", cookieOptions.accessToken)
+    
 
-    if(req.cookies.refreshToken){
-        const {ok} = await redisHelper.del('tokens', req.cookies.refreshToken)
-        if(!ok){return response(res, true, "logout not fully successfull")}
-    }
 
     return response(res, true, "logout success")
 }
 
 authController.refreshToken = async (req, res) => {
-    const refreshToken = req.cookies.refreshToken
-    if(!refreshToken) return response(res, false, 'refresh token invalid')
-
+    const oldToken = req.cookies.refreshToken
+    if(!oldToken) return response(res, false, 'refresh token invalid', null, 401)
+        
         
     try {
-        const decodedJwt = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRETKEY)
+        const newToken = randomUUID()
+        const id = await redis.eval(`
+            local userId = redis.call("GET", KEYS[1])
+            if not userId then return nil end
 
-        const {ok: ok} = await redisHelper.get('tokens', refreshToken)
-        if(!ok){return response(res, false, "refresh token invalid")}
+            redis.call("DEL", KEYS[1])
+            redis.call("SET", KEYS[2], userId, "EX", ARGV[1])
+
+            return userId
+        `,  {
+                keys: [redisHelper.redisKey("tokens", oldToken), redisHelper.redisKey("tokens", newToken)],
+                arguments: [String(60 * 60 * 168)]
+            })
+    
+    
+        if(!id) return response(res, false, 'refresh token invalid', null, 401)
+
         
-        
-        
-        const isExist = await UserModel.verifyUserById({id: decodedJwt.id})
+        const isExist = await UserModel.verifyUserById({id})
         if(!isExist) {
-            await redisHelper.del('tokens', refreshToken)
+            await redisHelper.del('tokens', newToken)
             res.clearCookie("refreshToken", cookieOptions.refreshToken)
             res.clearCookie("accessToken", cookieOptions.accessToken)
 
@@ -118,16 +146,18 @@ authController.refreshToken = async (req, res) => {
         }
 
 
-        const payload = {id: decodedJwt.id}
+        const payload = {id}
         const accessToken = jwt.sign(payload, process.env.JWT_SECRETKEY, {expiresIn:"10m"})
         res.cookie('accessToken', accessToken, cookieOptions.accessToken)
+        res.cookie('refreshToken', newToken, cookieOptions.refreshToken)
 
         return response(res, true, "new token created")
 
 
     } catch(err){
-        if(err.name === "TokenExpiredError"){return response(res, false, "refresh token expired")}
-        if(err.name === "JsonWebTokenError"){return response(res, false, "refresh token invalid")}
+        console.log(err)
+        if(err.name === "TokenExpiredError"){return response(res, false, "refresh token expired", null, 401)}
+        if(err.name === "JsonWebTokenError"){return response(res, false, "refresh token invalid", null, 401)}
         return response(res, false, "server error", null, 500)
     }
 }

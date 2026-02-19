@@ -22,12 +22,25 @@ export async function deleteData({datas}) {
     }
 }
 
-export async function getRandomQuizData() {
+export async function getRandomQuizData({num}) {
     try {
-        const [randomData] = await db.query("SELECT vocab, meaning FROM data ORDER BY RAND() LIMIT 15")
-        const [randomMeaning] = await db.query("SELECT meaning FROM data ORDER BY RAND() LIMIT 60")
+        const [randomData] = await db.query("SELECT vocab, meaning FROM data ORDER BY RAND() LIMIT ?", [num])
+        const [randomMeaning] = await db.query("SELECT meaning FROM data ORDER BY RAND() LIMIT ?", [num * 4])
         let randomMeaning2 = randomMeaning.map(item => item.meaning)
-        return {randomData, randomMeaning: randomMeaning2}
+        let questions = []
+        randomData.forEach(data => {
+            const choices = randomMeaning2.splice(0,4)
+            const randomIndex = Math.floor(Math.random() * 5)
+            choices.splice(randomIndex, 0, data.meaning)
+
+            questions.push({
+                vocab: data.vocab,
+                choices,
+                answerIndex: randomIndex
+            })
+        })
+
+        return questions
     } catch (err) {
         throw err
     }

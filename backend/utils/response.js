@@ -1,9 +1,9 @@
-function response(res, success, message, data = null, code = null){
+function response(res, success, message, data = null, code = 200){
     const payload = {
         success: success,
         message: message,
     }
     if(data){payload.data = data}
-    return res.status(code || 200).json(payload)
+    return res.status(code).json(payload)
 }
 export { response };

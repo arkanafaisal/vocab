@@ -39,33 +39,33 @@ dataController.deleteData = async (req, res) => {
     }
 }
 
-///not finished 
-dataController.getVocabData = async (req, res) => {
-    try {
-        const {randomData, randomMeaning} = await DataModel.getRandomQuizData()
-        const batchId = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`
-        let questions = []
-        let answers = []
-        randomData.forEach(data => {
-            const choices = randomMeaning.splice(0,4)
-            const randomIndex = Math.floor(Math.random() * 5)
-            choices.splice(randomIndex, 0, data.meaning)
+// ///not finished 
+// dataController.getVocabData = async (req, res) => {
+//     try {
+//         const {randomData, randomMeaning} = await DataModel.getRandomQuizData()
+//         const batchId = `${Date.now()}-${Math.floor(Math.random() * 1e6)}`
+//         let questions = []
+//         let answers = []
+//         randomData.forEach(data => {
+//             const choices = randomMeaning.splice(0,4)
+//             const randomIndex = Math.floor(Math.random() * 5)
+//             choices.splice(randomIndex, 0, data.meaning)
 
-            questions.push({
-                vocab: data.vocab,
-                choices
-            })
-            answers.push(data.meaning)
-        })
+//             questions.push({
+//                 vocab: data.vocab,
+//                 choices
+//             })
+//             answers.push(data.meaning)
+//         })
 
-        const {ok} = await redisHelper.set('answers', batchId, answers)
-        if(!ok){return response(res, false, "failed to get vocab data")}
+//         const {ok} = await redisHelper.set('answers', batchId, answers)
+//         if(!ok){return response(res, false, "failed to get vocab data")}
 
-        return response(res, true, "successfully getting question", {batchId, questions})
-    } catch(error) {
-        console.error(error)
-        return response(res, false, "server error", null, 500)
-    }
-}
+//         return response(res, true, "successfully getting question", {batchId, questions})
+//     } catch(error) {
+//         console.error(error)
+//         return response(res, false, "server error", null, 500)
+//     }
+// }
 
 export default dataController
