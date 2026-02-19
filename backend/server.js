@@ -16,7 +16,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, "../frontend")))
 
-const PORT = process.env.PORT || 3000
+const PORT = process.env.PORT || (process.env.NODE_ENV === "development"? 3000 : 3002)
 
 
 import { setupSocket } from "./config/socket.js"
