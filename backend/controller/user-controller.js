@@ -39,11 +39,11 @@ userController.verifyResetPassword = async (req, res) => {
 
     try {
         console.log(token)
-        const {ok: ok3, data} = await redisHelper.get("reset-password", token)
+        const {ok: ok3, data: id} = await redisHelper.get("reset-password", token)
         if(!ok3){return response(res, false, "link invalid atau expired")}
         await redisHelper.del("reset-password", token)
 
-        const changedRows = await UserModel.setPassword({data, password})
+        const changedRows = await UserModel.setPassword({id, password})
         if(!changedRows){return response(res, false, "user tidak ditemukan")}
         return response(res, true, "password berhasil diubah")
     }catch(err){
@@ -75,6 +75,7 @@ userController.verifyEmail = async (req, res) => {
 userController.updateUsername = async (req, res) => {
     const {ok, value: {newUsername, password}, message} = validate(userSchema.updateUsername, req.body)
     if(!ok){return response(res, false, message)}
+    console.log(newUsername)
 
     try {
         const user = await UserModel.getUserForUsernameChange({id: req.user.id})
@@ -85,7 +86,7 @@ userController.updateUsername = async (req, res) => {
         const matchPassword = await bcrypt.compare(password, user.password)
         if(!matchPassword){return response(res, false, "password salah")}
         
-        const changedRows = await UserModel.setUsername({id: req.user.id, newUsername})
+        const changedRows = await UserModel.setUsername({id: req.user.id, username: newUsername})
         if(!changedRows){return response(res, false, "user tidak ditemukan", null, 401)}
 
         return response(res, true, "username berhasil dirubah")

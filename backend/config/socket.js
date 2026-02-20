@@ -118,12 +118,16 @@ export function setupSocket(server) {
           else if(data.streak > 2){increment = 15}
         } else {data.streak = 0}
 
-        const response = {correct: isCorrect, correctAnswer, streak: data.streak}
-        response.points_added = increment
+        const response = {correct: isCorrect, correctAnswer, streak: data.streak, points_added: increment}
+
+        
         
         const changedRows = await updateUser({username: socket.user, increment, streak: data.streak})
         if(!changedRows){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
-  
+
+        const broadcastResponse = {username: socket.user, score: increment, streak: data.streak}
+        socket.broadcast.emit("leaderboard-update", broadcastResponse)
+
         data.currentIndex++
         const {ok:ok2} = await redisHelper.set("quiz", socket.user, data)
         if(!ok2){return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "gagal menyimpan data baru")}

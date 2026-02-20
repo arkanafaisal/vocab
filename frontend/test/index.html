@@ -1,0 +1,2154 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Master</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155', 600: '#475569' },
+                    },
+                    fontFamily: {
+                        sans: ['ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
+                    },
+                    animation: {
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+                        'spin-fast': 'spin 0.7s linear infinite',
+                        'score-pop': 'scorePop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                        'fill-bar': 'fillBar 1s linear forwards',
+                        'fire-pulse': 'firePulse 1.5s ease-in-out infinite',
+                        'text-shimmer': 'textShimmer 2s linear infinite',
+                        'shake-intense': 'shakeIntense 0.5s cubic-bezier(.36,.07,.19,.97) both',
+                        'bg-pan': 'bgPan 10s ease infinite',
+                        'heat-wave': 'heatWave 2s ease-in-out infinite',
+                        'logo-shake': 'logoShake 3s ease-in-out infinite',
+                        'float-up-fade': 'floatUpFade 1s ease-out forwards',
+                    },
+                    keyframes: {
+                        popIn: { '0%': { opacity: '0', transform: 'scale(0.9)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
+                        scorePop: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.5)', color: '#fbbf24' }, '100%': { transform: 'scale(1)' } },
+                        firePulse: { '0%, 100%': { opacity: '1', transform: 'scale(1)' }, '50%': { opacity: '0.8', transform: 'scale(1.05)' } },
+                        textShimmer: { '0%': { backgroundPosition: '0% 50%' }, '100%': { backgroundPosition: '200% 50%' } },
+                        shakeIntense: {
+                            '10%, 90%': { transform: 'translate3d(-1px, 0, 0)' },
+                            '20%, 80%': { transform: 'translate3d(2px, 0, 0)' },
+                            '30%, 50%, 70%': { transform: 'translate3d(-2px, 0, 0)' },
+                            '40%, 60%': { transform: 'translate3d(2px, 0, 0)' }
+                        },
+                        bgPan: { '0%': { backgroundPosition: '0% 50%' }, '50%': { backgroundPosition: '100% 50%' }, '100%': { backgroundPosition: '0% 50%' } },
+                        heatWave: { '0%': { opacity: '0.3' }, '50%': { opacity: '0.6' }, '100%': { opacity: '0.3' } },
+                        logoShake: { '0%, 100%': { transform: 'rotate(0deg)' }, '2%': { transform: 'rotate(-2deg)' }, '4%': { transform: 'rotate(2deg)' }, '6%': { transform: 'rotate(0deg)' } },
+                        fillBar: { '0%': { width: '0%' }, '100%': { width: '100%' } },
+                        floatUpFade: { '0%': { opacity: '1', transform: 'translateY(0)' }, '100%': { opacity: '0', transform: 'translateY(-30px)' } }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .app-background { transition: background 1.5s ease-in-out; }
+        .bg-normal { background-image: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
+        .bg-fire { background-image: linear-gradient(135deg, #450a0a 0%, #7c2d12 50%, #991b1b 100%); background-size: 200% 200%; animation: bgPan 10s ease infinite; }
+        .fire-vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, transparent 60%, rgba(220, 38, 38, 0.4) 100%); z-index: 5; mix-blend-mode: overlay; animation: heatWave 2s infinite; }
+        .text-fire { background: linear-gradient(to bottom, #fef08a 0%, #f59e0b 50%, #dc2626 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0px 2px 4px rgba(220, 38, 38, 0.3); font-weight: 900; }
+        .card-fire-glow-orange { box-shadow: 0 0 15px 1px rgba(249, 115, 22, 0.5), 0 0 30px 4px rgba(249, 115, 22, 0.2) inset; border-color: rgba(249, 115, 22, 0.8) !important; }
+        .card-fire-glow-red { box-shadow: 0 0 40px 5px rgba(220, 38, 38, 0.5), 0 0 60px 10px rgba(220, 38, 38, 0.2) inset; border-color: rgba(252, 165, 165, 0.9) !important; }
+        .animate-gradient-text { background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textShimmer 2s linear infinite; will-change: background-position; }
+        
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover, 
+        input:-webkit-autofill:focus, 
+        input:-webkit-autofill:active{
+            -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+            -webkit-text-fill-color: white !important;
+        }
+        
+        /* Utility for visibility transitions */
+        .hidden-visually { opacity: 0; pointer-events: none; max-height: 0; overflow: hidden; }
+        .visible-visually { opacity: 1; pointer-events: auto; max-height: 500px; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-dvh w-full selection:bg-indigo-500 selection:text-white overflow-hidden select-none font-sans">
+
+    <!-- ROOT CONTAINER -->
+    <div id="app-root" class="flex flex-col h-dvh overflow-hidden relative app-background bg-normal">
+        
+        <!-- CANVAS LAYER -->
+        <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-[100]"></canvas>
+        <div id="fire-vignette" class="fire-vignette hidden"></div>
+
+        <!-- MODALS LAYER -->
+        <div id="modal-container">
+
+            <!-- Global Toast Notification -->
+            <div id="global-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[400] transition-all duration-300 ease-in-out opacity-0 -translate-y-10 pointer-events-none w-full max-w-sm px-4 flex justify-center">
+                <div id="toast-content" class="px-6 py-3 rounded-xl shadow-2xl font-bold text-sm flex items-center gap-3">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+
+            <!-- Verify Email Process Modal -->
+            <div id="verify-process-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-indigo-500/50 p-8 text-center flex flex-col items-center">
+                    <div id="verify-spinner" class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div id="verify-icon" class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mb-4 hidden">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div id="verify-error-icon" class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center mb-4 hidden">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </div>
+                    <h3 id="verify-title" class="text-xl font-bold text-white mb-2">Memverifikasi...</h3>
+                    <p id="verify-desc" class="text-slate-400 text-sm">Mohon tunggu sebentar.</p>
+                    
+                    <button id="verify-back-btn" class="mt-6 w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors hidden">Kembali ke Halaman Utama</button>
+                </div>
+            </div>
+
+            <!-- New Password Modal -->
+            <div id="new-password-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl border border-indigo-500/50 p-6 flex flex-col relative">
+                    <!-- Success View Container -->
+                    <div id="np-success-view" class="hidden flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Password Diubah!</h3>
+                        <p class="text-slate-400 text-sm mb-6">Password Anda berhasil diperbarui. Silakan login kembali.</p>
+                        <button id="np-back-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors">Kembali ke Halaman Utama</button>
+                    </div>
+
+                    <!-- Form View -->
+                    <div id="np-form-view">
+                        <h3 class="text-xl font-bold text-white mb-1 text-center">Atur Password Baru</h3>
+                        <p class="text-slate-400 text-sm mb-4 text-center">Silakan masukkan password baru untuk akun Anda.</p>
+                        
+                        <!-- Inline Message for errors -->
+                        <span id="np-message" class="hidden block text-center mb-3"></span>
+
+                        <form id="new-password-form" class="flex flex-col gap-3">
+                             <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD BARU</label>
+                                <input id="np-input" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">KONFIRMASI PASSWORD</label>
+                                <input id="np-confirm" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <button type="submit" id="np-submit-btn" class="mt-2 w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">
+                                Simpan Password Baru
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Back button for initial invalid token state -->
+                    <div id="np-error-view" class="hidden flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Akses Ditolak</h3>
+                        <p id="np-error-desc" class="text-slate-400 text-sm mb-6">Token tidak valid atau telah kedaluwarsa.</p>
+                        <button id="np-error-back-btn" class="w-full py-2.5 rounded-xl bg-dark-700 text-white font-bold text-sm hover:bg-dark-600 transition-colors">Kembali ke Halaman Utama</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connection Error Modal -->
+            <div id="connection-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-rose-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4 animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <h3 id="conn-modal-title" class="text-lg font-bold text-white mb-2">Koneksi Terputus</h3>
+                    <p id="conn-modal-desc" class="text-slate-400 text-sm mb-6">Terjadi kesalahan pada koneksi server.</p>
+                    <button id="conn-reload-btn" class="w-full py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-900/20 transition-colors">
+                        Muat Ulang
+                    </button>
+                    <!-- Loading Spinner for Retry -->
+                    <div id="conn-loading" class="hidden flex justify-center py-2">
+                        <div class="w-6 h-6 border-2 border-slate-500 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Success Modal -->
+            <div id="logout-success-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-emerald-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Berhasil Keluar</h3>
+                    <p class="text-slate-400 text-sm mb-6">Halaman akan dimuat ulang dalam <span id="logout-timer" class="font-bold text-emerald-400">3</span> detik.</p>
+                    <button id="logout-refresh-btn" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-900/20 transition-colors">
+                        Muat Ulang Sekarang
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fullscreen Request Modal -->
+            <div id="fullscreen-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-indigo-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-12 h-12 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Mode Layar Penuh?</h3>
+                    <p class="text-slate-400 text-sm mb-6">Untuk pengalaman bermain yang lebih imersif, kami sarankan menggunakan mode layar penuh.</p>
+                    <div class="flex gap-3">
+                        <button id="fullscreen-deny-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Nanti</button>
+                        <button id="fullscreen-allow-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">Ya, Aktifkan</button>
+                    </div>
+                </div>
+            </div>
+
+             <!-- User Info Modal -->
+             <div id="user-info-modal" class="fixed inset-0 z-[115] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl border border-dark-700 animate-pop-in relative overflow-hidden flex flex-col">
+                    <button id="user-info-close-btn" class="absolute top-3 right-3 z-20 p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-full transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <div class="bg-gradient-to-br from-blue-700 to-indigo-800 px-6 py-6 text-center relative overflow-hidden shrink-0">
+                        <h2 class="text-xl font-bold text-white mb-1 relative z-10">Profil Saya</h2>
+                    </div>
+                    <div class="p-6 bg-dark-800 flex flex-col gap-4">
+                         <!-- Stats -->
+                         <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-dark-900/50 p-3 rounded-2xl border border-dark-700 text-center">
+                                <span class="block text-xs text-slate-400 font-bold uppercase mb-1">Score</span>
+                                <span id="info-score" class="block text-xl font-black text-amber-400">0</span>
+                            </div>
+                            <div class="bg-dark-900/50 p-3 rounded-2xl border border-dark-700 text-center">
+                                <span class="block text-xs text-slate-400 font-bold uppercase mb-1">Streak</span>
+                                <span id="info-streak" class="block text-xl font-black text-orange-500">0</span>
+                            </div>
+                         </div>
+                         
+                         <!-- Details -->
+                         <div class="space-y-4">
+                             <div>
+                                 <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Username</label>
+                                 <div class="flex items-center gap-2">
+                                     <div class="flex-1 bg-dark-900 px-4 py-2.5 rounded-xl border border-dark-700 text-slate-200 text-sm font-medium" id="info-username"></div>
+                                     <button id="edit-username-btn" class="p-2.5 bg-dark-700 hover:bg-dark-600 rounded-xl text-indigo-400 transition-colors">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                     </button>
+                                 </div>
+                             </div>
+                             <div>
+                                 <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Email</label>
+                                 <div class="flex items-center gap-2">
+                                     <div class="flex-1 bg-dark-900 px-4 py-2.5 rounded-xl border border-dark-700 text-slate-200 text-sm font-medium truncate" id="info-email"></div>
+                                     <button id="edit-email-btn" class="p-2.5 bg-dark-700 hover:bg-dark-600 rounded-xl text-indigo-400 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <!-- Reset Password -->
+                         <button id="reset-pass-init-btn" class="w-full py-3 rounded-xl border border-indigo-500/30 bg-indigo-900/10 text-indigo-300 font-bold text-sm hover:bg-indigo-900/30 transition-colors mt-2">
+                             Reset Password
+                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generic Edit Modal -->
+            <div id="edit-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden flex flex-col">
+                    <div class="p-5 bg-dark-800">
+                        <h3 id="edit-modal-title" class="text-lg font-bold text-white mb-2">Edit Info</h3>
+                        <span id="edit-message" class="hidden text-center mb-3"></span>
+                        
+                        <form id="edit-form" class="flex flex-col gap-3">
+                            <div>
+                                <label id="edit-label-input" class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">NEW VALUE</label>
+                                <input id="edit-input-value" type="text" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD</label>
+                                <input id="edit-input-password" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div class="flex gap-3 mt-2">
+                                <button type="button" id="edit-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Tutup</button>
+                                <button type="submit" id="edit-save-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors">Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset Password Confirmation Modal -->
+             <div id="reset-confirm-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Reset Password?</h3>
+                    <p class="text-slate-400 text-sm mb-6">Link reset password akan dikirim ke email: <br><span id="reset-email-target" class="text-indigo-400 font-bold"></span></p>
+                    <div class="flex gap-3">
+                        <button id="reset-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Batal</button>
+                        <button id="reset-confirm-send-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">Kirim Link</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auth Modal -->
+            <div id="auth-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl shadow-black/50 border border-dark-700 animate-pop-in relative overflow-hidden flex flex-col">
+                    <button id="auth-close-btn" class="absolute top-3 right-3 z-20 p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-full transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <!-- Header -->
+                    <div id="auth-header-bg" class="bg-gradient-to-br from-indigo-700 to-purple-800 px-6 py-6 text-center relative overflow-hidden shrink-0">
+                        <h1 class="text-2xl font-extrabold text-white mb-1 relative z-10 tracking-tight">Vocab Master</h1>
+                        <div class="relative h-5 w-full overflow-hidden">
+                            <p id="auth-subtitle-login" class="text-indigo-100 text-sm absolute w-full transition-all duration-500 ease-in-out transform translate-y-0 opacity-100">Welcome back!</p>
+                            <p id="auth-subtitle-register" class="text-indigo-100 text-sm absolute w-full transition-all duration-500 ease-in-out transform translate-y-8 opacity-0">Join us now!</p>
+                        </div>
+                    </div>
+                    <!-- Body -->
+                    <div class="p-5 bg-dark-800">
+                        <div id="auth-notification" class="mb-3 rounded-xl text-xs flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 p-3 border">
+                            <div id="auth-notif-icon"></div>
+                            <span id="auth-notif-text" class="font-medium leading-tight"></span>
+                        </div>
+                        <form id="auth-form" class="flex flex-col gap-2">
+                            <div>
+                                <label id="label-username" class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">USERNAME / EMAIL</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </div>
+                                    <input id="input-username" type="text" maxlength="255" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all invalid:border-rose-500" placeholder="user / email">
+                                </div>
+                            </div>
+
+                            <div id="container-email" class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0">
+                                <div class="pt-1">
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">EMAIL (OPSIONAL)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                        </div>
+                                        <!-- FIXED: Validation max 31 applied -->
+                                        <input id="input-email" type="email" maxlength="31" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="contoh@email.com" tabindex="-1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    </div>
+                                    <input id="input-password" type="password" maxlength="255" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="••••••••">
+                                </div>
+                            </div>
+
+                            <div id="container-confirm-pass" class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0">
+                                <div class="pt-1">
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">CONFIRM PASSWORD</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                        </div>
+                                        <input id="input-confirm-password" type="password" maxlength="255" disabled class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="••••••••" tabindex="-1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="auth-submit-btn" type="submit" class="mt-2 w-full py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 min-h-[44px] bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20">
+                                <span id="auth-btn-text" class="transition-all duration-300">LOG IN</span>
+                            </button>
+                        </form>
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-slate-400 font-medium">
+                                <span id="auth-switch-text">Belum punya akun? </span>
+                                <button id="auth-switch-btn" class="font-bold underline decoration-current/30 underline-offset-2 transition-colors text-blue-400 hover:text-blue-300">
+                                    Daftar Sekarang
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Modal -->
+            <div id="logout-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Konfirmasi Logout</h3>
+                    <p class="text-slate-400 text-sm mb-6">Apakah Anda yakin ingin keluar dari akun?</p>
+                    <div class="flex gap-3">
+                        <button id="logout-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Batal</button>
+                        <button id="logout-confirm-btn" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-900/20 transition-colors">Keluar</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- NAVBAR -->
+        <nav id="navbar" class="bg-dark-900/80 backdrop-blur-md border-b border-dark-700 sticky top-0 z-50 shadow-sm transition-colors duration-500">
+            <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative">
+                <div id="navbar-logo-container" class="font-black text-xl tracking-tight shrink-0 flex items-center gap-1">
+                    <span id="logo-text-vocab" class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Vocab</span>
+                    <span class="hidden sm:inline text-slate-200">Master</span>
+                </div>
+                
+                <!-- Mobile Tabs -->
+                <div class="flex bg-dark-800 border border-dark-700 p-1 rounded-xl mx-2 shrink-0 md:hidden">
+                    <button id="nav-btn-quiz" class="flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 
+                        <span class="hidden sm:inline">Play</span>
+                    </button>
+                    <button id="nav-btn-rank" class="flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 text-slate-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> 
+                        <span class="hidden sm:inline">Rank</span>
+                    </button>
+                </div>
+
+                <div id="navbar-user-section" class="flex items-center justify-end shrink-0 min-w-[40px]">
+                    <!-- Dynamically Injected -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-hidden relative flex flex-col md:flex-row p-4 gap-4 max-w-6xl mx-auto w-full">
+            
+            <!-- QUIZ COLUMN -->
+            <div id="quiz-col" class="flex-1 h-full flex flex-col block">
+                <!-- SKELETON LOADER -->
+                <div id="quiz-loader" class="w-full h-full flex items-center justify-center p-4 fade-in hidden">
+                    <!-- FIXED height logic -->
+                    <div class="w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden max-h-full my-auto border-2 border-dark-700 relative">
+                        <!-- Header -->
+                        <div class="bg-dark-900/50 border-b border-dark-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 animate-pulse">
+                            <!-- Streak Placeholder (Left) -->
+                             <div class="h-8 w-16 bg-dark-700 rounded-full"></div>
+                            <!-- Score Placeholder (Right) -->
+                             <div class="h-8 w-20 bg-dark-700 rounded-full"></div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="flex-1 flex flex-col justify-center px-6 py-6 gap-6 animate-pulse">
+                            <!-- Question -->
+                            <div class="flex flex-col items-center gap-3 w-full">
+                                <div class="h-4 w-32 bg-dark-700 rounded-full"></div> 
+                                <div class="h-10 w-3/4 bg-dark-700 rounded-lg"></div> 
+                            </div>
+                            <!-- Choices -->
+                            <div class="flex flex-col gap-3 w-full">
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Retry Overlay -->
+                        <div id="retry-overlay" class="absolute inset-0 bg-dark-900/60 backdrop-blur-[2px] flex items-center justify-center z-20 hidden">
+                             <button id="retry-btn" class="px-6 py-3 bg-dark-700 border border-dark-600 text-slate-200 rounded-xl font-bold hover:bg-dark-600 hover:text-white transition-all shadow-xl flex items-center gap-2 pointer-events-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                                Gagal memuat, Coba Lagi
+                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="w-full h-full flex items-center justify-center p-4 fade-in opacity-100 scale-100 transition-all duration-500 ease-out hidden">
+                    <!-- FIXED height logic -->
+                    <div id="quiz-card" class="w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden max-h-full my-auto border-2 transition-all duration-500 relative border-dark-700">
+                        <div class="bg-dark-900/50 border-b border-dark-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10">
+                            <!-- Streak Left -->
+                            <div class="flex-1 flex justify-start" id="streak-badge-container">
+                                <!-- Streak badge injected here -->
+                            </div>
+                            <!-- Score Right -->
+                            <!-- ADDED relative for floating score animation -->
+                            <div class="relative">
+                                <div id="score-container" class="bg-amber-900/30 border border-amber-700/50 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2 transition-transform duration-300">
+                                    <span class="text-[10px] font-bold text-amber-500 uppercase leading-none mt-[1px]">Score</span>
+                                    <span id="score-display" class="text-base font-extrabold text-amber-400 leading-none transition-colors">0</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10">
+                            <div class="px-6 py-6 text-center">
+                                <h2 class="text-slate-400 text-xs font-bold uppercase tracking-wide mb-2">Apa arti kata:</h2>
+                                <h1 id="question-vocab" class="text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white"></h1>
+                            </div>
+                            <div class="px-6 pb-6">
+                                <div id="choices-container" class="flex flex-col gap-3">
+                                    <!-- Choices injected here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="h-4 bg-dark-800/0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEADERBOARD COLUMN -->
+            <div id="leaderboard-col" class="w-full md:w-[350px] lg:w-[400px] h-full flex flex-col hidden md:flex">
+                <div class="w-full max-w-2xl mx-auto p-4 flex flex-col h-full fade-in pb-10">
+                    <div class="md:hidden mb-3">
+                        <button id="mobile-user-info-btn" class="w-full py-3 bg-dark-800 border border-dark-700 rounded-xl text-slate-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-dark-700 transition-colors shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Informasi User
+                        </button>
+                    </div>
+
+                    <div id="leaderboard-card" class="bg-dark-800 rounded-3xl shadow-xl shadow-black/20 overflow-hidden border border-dark-700 flex-1 min-h-0 flex flex-col relative mb-4 transition-all duration-1000">
+                        <div id="leaderboard-header" class="bg-gradient-to-r from-indigo-800 to-purple-900 p-4 relative flex items-center justify-center text-white shrink-0 shadow-lg z-20 border-b border-white/10 transition-all duration-1000">
+                            <h2 class="text-xl md:text-2xl font-black flex items-center gap-2 tracking-wide drop-shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> 
+                                LEADERBOARD
+                            </h2>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-dark-800 relative">
+                            <table class="w-full border-collapse table-fixed">
+                                <thead class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider bg-dark-900/95 backdrop-blur sticky top-0 z-10 shadow-sm border-b border-dark-700">
+                                    <tr>
+                                        <th class="px-2 py-3 text-center w-[15%]">#</th>
+                                        <th class="px-4 py-3 text-left w-[55%]">Player</th>
+                                        <th class="px-4 py-3 text-right w-[30%]">Pts</th>
+                                        <th class="px-2 py-3 text-center w-[15%]">🔥</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-body" class="text-sm md:text-base">
+                                    <!-- Rows injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="current-user-rank-row" class="border-t shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] px-0 transition-colors duration-1000 bg-amber-900/20 border-amber-900/30 hidden">
+                             <!-- My Rank injected here -->
+                        </div>
+                    </div>
+                    <button id="refresh-lb-btn" class="w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-dark-800 border border-dark-700 text-indigo-400 hover:bg-dark-700 hover:border-indigo-500/50 hover:shadow-lg active:scale-[0.98] shrink-0">
+                        Refresh Leaderboard
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- TEMPLATES -->
+    
+    <template id="template-choice-btn">
+        <button class="w-full py-3.5 px-5 rounded-2xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center min-h-[52px] text-center bg-dark-900 text-slate-300 hover:bg-dark-700 hover:text-white border-2 border-dark-700 shadow-sm overflow-hidden relative group">
+            <span class="relative z-10 break-words w-full"></span>
+        </button>
+    </template>
+
+    <template id="template-lb-row">
+        <tr class="border-b border-dark-700 last:border-0 hover:bg-dark-700 transition-colors">
+            <td class="px-2 py-3.5 font-bold w-[15%] text-center text-slate-500 rank-cell"></td>
+            <td class="px-4 py-3.5 font-semibold w-[55%] text-slate-300"><div class="truncate w-full username-cell"></div></td>
+            <td class="px-4 py-3.5 text-right font-mono font-bold text-indigo-400 w-[30%] score-cell"></td>
+            <td class="px-2 py-3.5 font-bold w-[15%] text-center text-orange-500 streak-cell"></td>
+        </tr>
+    </template>
+
+    <!-- Vanilla JS Implementation -->
+    <script>
+        // ==========================================
+        // SECTION 1: STATE & BACKEND SERVICES
+        // ==========================================
+        const state = {
+            user: null, 
+            score: 0,
+            streak: 0,
+            currentQuestion: null,
+            view: 'quiz', 
+            leaderboard: [],
+            lbStatus: 'idle', 
+            lbCooldown: 0,
+            retryCount: 0,
+            quizUI: {
+                selectedAnswer: null,
+                isValidating: false,
+                isTransitioning: false,
+                correctAnswerText: null, 
+                animationFinished: false,
+                pendingResult: null 
+            }
+        };
+
+        const Icons = {
+            User: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`,
+            LogOut: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>`,
+            LogIn: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" x2="3" y1="12" y2="12"/></svg>`,
+            Fire: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a5.5 5.5 0 1 1-11 0c0-.396.06-.776.17-1.132a5.5 5.5 0 0 0 .33 1.632z"/></svg>`,
+            FireOutline: `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a5.5 5.5 0 1 1-11 0c0-.396.06-.776.17-1.132a5.5 5.5 0 0 0 .33 1.632z"/></svg>`,
+            Fullscreen: `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>`
+        };
+
+        // DOM Elements
+        const authModal = document.getElementById('auth-modal');
+        const globalToast = document.getElementById('global-toast');
+        const toastContent = document.getElementById('toast-content');
+        const connModal = document.getElementById('connection-modal');
+        const logoutSuccessModal = document.getElementById('logout-success-modal'); 
+        const fullscreenModal = document.getElementById('fullscreen-modal'); 
+        const userInfoModal = document.getElementById('user-info-modal');
+        const editModal = document.getElementById('edit-modal');
+        const resetConfirmModal = document.getElementById('reset-confirm-modal');
+        
+        const fullscreenAllowBtn = document.getElementById('fullscreen-allow-btn'); 
+        const fullscreenDenyBtn = document.getElementById('fullscreen-deny-btn'); 
+        const connModalTitle = document.getElementById('conn-modal-title');
+        const connModalDesc = document.getElementById('conn-modal-desc');
+        const connReloadBtn = document.getElementById('conn-reload-btn');
+        const connLoading = document.getElementById('conn-loading');
+        const logoutRefreshBtn = document.getElementById('logout-refresh-btn'); 
+        const logoutTimer = document.getElementById('logout-timer'); 
+        const authForm = document.getElementById('auth-form');
+        const usernameInput = document.getElementById('input-username');
+        const passwordInput = document.getElementById('input-password');
+        const emailInput = document.getElementById('input-email');
+        const confirmPassInput = document.getElementById('input-confirm-password');
+        const emailContainer = document.getElementById('container-email');
+        const confirmPassContainer = document.getElementById('container-confirm-pass');
+        const authBtnText = document.getElementById('auth-btn-text');
+        const authSubmitBtn = document.getElementById('auth-submit-btn');
+        const authSwitchText = document.getElementById('auth-switch-text');
+        const authSwitchBtn = document.getElementById('auth-switch-btn');
+        const authNotification = document.getElementById('auth-notification');
+        const authNotifText = document.getElementById('auth-notif-text');
+        const authNotifIcon = document.getElementById('auth-notif-icon');
+        const authSubtitleLogin = document.getElementById('auth-subtitle-login');
+        const authSubtitleRegister = document.getElementById('auth-subtitle-register');
+        const authCloseBtn = document.getElementById('auth-close-btn');
+        const retryBtn = document.getElementById('retry-btn'); 
+        const retryOverlay = document.getElementById('retry-overlay');
+        const userInfoCloseBtn = document.getElementById('user-info-close-btn');
+        const editCancelBtn = document.getElementById('edit-cancel-btn');
+        const resetCancelBtn = document.getElementById('reset-cancel-btn');
+        const mobileUserInfoBtn = document.getElementById('mobile-user-info-btn');
+        
+        // Deep Link Modal Elements
+        const verifyProcessModal = document.getElementById('verify-process-modal');
+        const newPasswordModal = document.getElementById('new-password-modal');
+        const verifyTitle = document.getElementById('verify-title');
+        const verifyDesc = document.getElementById('verify-desc');
+        const verifySpinner = document.getElementById('verify-spinner');
+        const verifyIcon = document.getElementById('verify-icon');
+        const verifyErrorIcon = document.getElementById('verify-error-icon');
+        const verifyCloseBtn = document.getElementById('verify-close-btn');
+        const verifyBackBtn = document.getElementById('verify-back-btn');
+        const newPasswordForm = document.getElementById('new-password-form');
+        const npInput = document.getElementById('np-input');
+        const npConfirm = document.getElementById('np-confirm');
+        const npSubmitBtn = document.getElementById('np-submit-btn');
+        const npSuccessView = document.getElementById('np-success-view');
+        const npFormView = document.getElementById('np-form-view');
+        const npBackBtn = document.getElementById('np-back-btn');
+        const npMessage = document.getElementById('np-message');
+
+        // User Info Elements
+        const infoScore = document.getElementById('info-score');
+        const infoStreak = document.getElementById('info-streak');
+        const infoUsername = document.getElementById('info-username');
+        const infoEmail = document.getElementById('info-email');
+        const editUsernameBtn = document.getElementById('edit-username-btn');
+        const editEmailBtn = document.getElementById('edit-email-btn');
+        const resetPassInitBtn = document.getElementById('reset-pass-init-btn');
+
+        // Edit Modal Elements
+        const editModalTitle = document.getElementById('edit-modal-title');
+        const editLabelInput = document.getElementById('edit-label-input');
+        const editInputValue = document.getElementById('edit-input-value');
+        const editInputPassword = document.getElementById('edit-input-password');
+        const editSaveBtn = document.getElementById('edit-save-btn');
+        const editForm = document.getElementById('edit-form');
+        const editMessage = document.getElementById('edit-message');
+
+        // Reset Confirm Elements
+        const resetEmailTarget = document.getElementById('reset-email-target');
+        const resetConfirmSendBtn = document.getElementById('reset-confirm-send-btn');
+
+        const API_BASE_URL = "/api";
+        let socket = null;
+        let lbInterval = null;
+        let currentEditMode = null; // 'username' or 'email'
+        let toastTimeout;
+
+        function showToast(msg, type = 'info') {
+            if (toastTimeout) clearTimeout(toastTimeout);
+            let bgClass, textClass, iconSVG;
+
+            if (type === 'success') {
+                bgClass = 'bg-emerald-900/90 border border-emerald-500/50';
+                textClass = 'text-white';
+                iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+            } else if (type === 'error') {
+                bgClass = 'bg-rose-900/90 border border-rose-500/50';
+                textClass = 'text-white';
+                iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>`;
+            } else {
+                bgClass = 'bg-dark-800/90 border border-dark-600';
+                textClass = 'text-slate-200';
+                iconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>`;
+            }
+
+            toastContent.className = `px-6 py-3 rounded-xl shadow-2xl font-bold text-sm flex items-center gap-3 backdrop-blur-md ${bgClass} ${textClass}`;
+            toastContent.innerHTML = `${iconSVG}<span>${msg}</span>`;
+
+            globalToast.classList.remove('opacity-0', '-translate-y-10', 'pointer-events-none');
+            globalToast.classList.add('opacity-100', 'translate-y-0', 'pointer-events-auto');
+
+            toastTimeout = setTimeout(() => {
+                globalToast.classList.add('opacity-0', '-translate-y-10', 'pointer-events-none');
+                globalToast.classList.remove('opacity-100', 'translate-y-0', 'pointer-events-auto');
+            }, 3000);
+        }
+
+        function showConnectionModal(title, desc, isFatal = true) {
+            connModalTitle.textContent = title;
+            connModalDesc.textContent = desc;
+            if (isFatal) {
+                connReloadBtn.classList.remove('hidden');
+                connLoading.classList.add('hidden');
+            } else {
+                connReloadBtn.classList.add('hidden');
+                connLoading.classList.remove('hidden');
+            }
+            connModal.classList.remove('hidden');
+        }
+
+        // VALIDATION HELPERS
+        const isValidUsername = (u) => /^[a-zA-Z0-9_]{3,20}$/.test(u);
+        const isValidEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) && e.length <= 31;
+        const isValidPassword = (p) => p.length >= 6 && p.length <= 255;
+        const isValidToken = (t) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(t);
+
+        async function fetchData(endpoint, method = 'GET', body = null, isRetry = false) {
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                const options = { method, headers };
+                if (body) options.body = JSON.stringify(body);
+
+                let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+
+                if (response.status === 429) {
+                    showToast("Terlalu banyak permintaan, coba lagi nanti.", 'error');
+                    return { success: false, message: "Too Many Requests" };
+                }
+
+                if (response.status === 500) {
+                    showToast("Terjadi kesalahan server (500)", 'error');
+                    return { success: false, message: "Server Error" };
+                }
+
+                if ((response.status === 401 || response.status === 403) && !isRetry) {
+                    if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
+                        return await response.json(); 
+                    }
+
+                    const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
+                    
+                    if (refreshRes.ok) {
+                        return await fetchData(endpoint, method, body, true);
+                    } else {
+                        state.user = null;
+                        if (socketService) socketService.disconnect();
+                        renderHeader(); 
+                        openAuthModal();
+                        showToast("Sesi habis, silakan login kembali", 'error');
+                        return { success: false, message: "Session expired" };
+                    }
+                }
+
+                return await response.json();
+
+            } catch (err) {
+                console.error(`API Error (${endpoint}):`, err);
+                return { success: false, message: "Network Error" };
+            }
+        }
+
+        const api = {
+            async login(credential, password) {
+                const isEmail = credential.includes('@');
+                const body = { password };
+                if (isEmail) body.email = credential;
+                else body.username = credential;
+                return await fetchData('/auth/login', 'POST', body);
+            },
+            async register(username, password, email) {
+                const body = { username, password };
+                if(email) body.email = email;
+                return await fetchData('/auth/register', 'POST', body);
+            },
+            async logout() {
+                return await fetchData('/auth/logout', 'DELETE');
+            },
+            async getLeaderboard() {
+                return await fetchData('/users/', 'GET');
+            },
+            async getMe() {
+                return await fetchData('/users/me', 'GET');
+            },
+            async updateUsername(newUsername, password) {
+                return await fetchData('/users/update-username', 'PATCH', { newUsername, password });
+            },
+            async updateEmail(newEmail, password) {
+                return await fetchData('/users/update-email', 'PATCH', { newEmail, password });
+            },
+            async resetPassword() {
+                return await fetchData('/users/reset-password', 'PATCH');
+            },
+            async verifyEmail(token) {
+                 return await fetchData(`/users/verify-email?token=${token}`, 'GET');
+            },
+            async confirmResetPassword(token, newPassword) {
+                 // UPDATED Endpoint
+                 return await fetchData(`/users/verify-reset-password?token=${token}`, 'PATCH', { password: newPassword });
+            }
+        };
+
+        const socketService = {
+            connect() {
+                if (socket) return;
+                try {
+                    socket = io("/", {
+                        withCredentials: true,
+                        transports: ['websocket']
+                    });
+
+                    socket.on("warn", async (data) => {
+                        const code = data.code;
+                        const msg = data.message || "Terjadi peringatan dari server.";
+                        
+                        console.warn(`Socket Warn [${code}]: ${msg}`);
+
+                        switch (code) {
+                            case 1001: // RATE_LOCKED
+                                showConnectionModal("Akses Dibatasi", msg, true);
+                                socketService.disconnect();
+                                break;
+                            case 1002: // TEMP_FAILURE
+                                showToast(msg, 'error');
+                                break;
+                            case 1003: // UNAUTHORIZED, QUIZ_OUT_OF_SYNC, SESSION_EXPIRED
+                                showToast(msg, 'error');
+                                state.retryCount = (state.retryCount || 0) + 1;
+                                if (state.retryCount > 3) {
+                                    window.location.reload();
+                                } else {
+                                    setTimeout(() => {
+                                        if (socket && socket.disconnected) {
+                                            socket.connect();
+                                        }
+                                    }, 1000);
+                                }
+                                break;
+                            case 1004: // USER_NOT_FOUND, SERVER_ERROR
+                                showConnectionModal("Terjadi Kesalahan", msg, true);
+                                socketService.disconnect();
+                                break;
+                            case 1005: // ACCOUNT_CONFLICT
+                                showToast(msg, 'error');
+                                await api.logout();
+                                state.user = null;
+                                socketService.disconnect();
+                                renderHeader();
+                                openAuthModal();
+                                break;
+                            default:
+                                showToast(msg, 'error');
+                        }
+                    });
+
+                    socket.on("disconnect", (reason) => {
+                        console.log("Socket disconnected:", reason);
+                        renderHeader();
+                        if (state.quizUI.isValidating) {
+                            showToast("Koneksi terputus. Silakan coba lagi.", 'error');
+                            state.quizUI.isValidating = false;
+                            state.quizUI.selectedAnswer = null;
+                            state.quizUI.animationFinished = false;
+                            state.quizUI.pendingResult = null;
+                            renderQuiz(); 
+                        }
+                    });
+
+                    socket.on("connect_error", async (err) => {
+                        console.log("Socket connect error:", err.message);
+                        const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
+                        if (res.ok) {
+                            socket.connect(); 
+                        } else {
+                            state.user = null;
+                            renderHeader();
+                            openAuthModal();
+                            showToast("Gagal terhubung ke game server. Silakan login ulang.", 'error');
+                        }
+                    });
+
+                } catch(e) { console.log("Socket init failed"); }
+            },
+            disconnect() {
+                if (socket) { socket.disconnect(); socket = null; }
+            },
+            getQuestion() { if (socket) socket.emit("request_question"); },
+            submitAnswer(answer) { if (socket && socket.connected) socket.emit("submit_answer", answer); }, 
+            onQuestionReceived(callback) { if (socket) socket.on("new_question", callback); },
+            onAnswerResult(callback) { if (socket) socket.on("answer_result", callback); },
+            onLeaderboardUpdate(callback) { if (socket) socket.on("leaderboard-update", callback); },
+            off(event) { if (socket) socket.off(event); }
+        };
+
+        // ==========================================
+        // SECTION 2: UI LOGIC & HANDLERS
+        // ==========================================
+        
+        let isLoginMode = true;
+
+        const canvas = document.getElementById('particle-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationFrameId;
+
+        const formatScore = (num) => num >= 1000 ? (num/1000).toFixed(1)+'K' : num.toLocaleString();
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        function spawnParticles(x, y, count, type = 'spark') {
+            let colors = ['#f59e0b', '#fbbf24']; 
+            if (type === 'fire') colors = ['#ef4444', '#f87171', '#fbbf24', '#f59e0b']; 
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const vx = type === 'ember' ? (Math.random() - 0.5) * 2 : Math.cos(angle) * (Math.random() * 3 + 1);
+                const vy = type === 'ember' ? -(Math.random() * 2 + 1) : Math.sin(angle) * (Math.random() * 3 + 1);
+                particles.push({ 
+                    x, y, vx, vy, 
+                    life: 1.0, 
+                    decay: Math.random() * 0.02 + 0.015, 
+                    color: colors[Math.floor(Math.random() * colors.length)], 
+                    size: Math.random() * 2.5 + 1, 
+                    type 
+                });
+            }
+        }
+
+        function loopParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            let active = false;
+            
+            if (state.streak >= 10 && Math.random() < 0.3) {
+                particles.push({ 
+                    x: Math.random() * canvas.width, 
+                    y: canvas.height + 10, 
+                    vx: (Math.random() - 0.5) * 1.5, 
+                    vy: -(Math.random() * 4 + 2), 
+                    life: 1.0, 
+                    decay: 0.01, 
+                    color: Math.random() > 0.5 ? '#fbbf24' : '#ef4444', 
+                    size: Math.random() * 3 + 1, 
+                    type: 'ember' 
+                });
+                active = true;
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                if (p.type === 'ember') p.vx += (Math.random() - 0.5) * 0.1;
+                
+                if (p.life <= 0) particles.splice(i, 1);
+                else {
+                    ctx.globalAlpha = p.life; 
+                    ctx.fillStyle = p.color; 
+                    ctx.beginPath(); 
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2); 
+                    ctx.fill(); 
+                    active = true;
+                }
+            }
+            if (active || state.streak >= 10) animationFrameId = requestAnimationFrame(loopParticles);
+            else animationFrameId = null;
+        }
+
+        function startParticleLoop() {
+            if (!animationFrameId) animationFrameId = requestAnimationFrame(loopParticles);
+        }
+
+        function toggleAuthMode() {
+            isLoginMode = !isLoginMode;
+            authNotification.classList.add('max-h-0', 'opacity-0');
+            authNotification.classList.remove('max-h-20', 'opacity-100');
+            
+            if (isLoginMode) {
+                authSubtitleLogin.classList.remove('-translate-y-8', 'opacity-0');
+                authSubtitleRegister.classList.add('translate-y-8', 'opacity-0');
+                
+                emailContainer.classList.add('max-h-0', 'opacity-0');
+                emailContainer.classList.remove('max-h-32', 'opacity-100');
+                
+                confirmPassContainer.classList.add('max-h-0', 'opacity-0');
+                confirmPassContainer.classList.remove('max-h-32', 'opacity-100');
+                confirmPassInput.disabled = true;
+                emailInput.disabled = true;
+                
+                emailInput.tabIndex = -1;
+                confirmPassInput.tabIndex = -1;
+                
+                authSubmitBtn.className = "mt-2 w-full py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 min-h-[44px] bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20";
+                authBtnText.textContent = "LOG IN";
+                authSwitchText.textContent = "Belum punya akun? ";
+                authSwitchBtn.textContent = "Daftar Sekarang";
+                authSwitchBtn.classList.replace('text-green-400', 'text-blue-400');
+                authSwitchBtn.classList.replace('hover:text-blue-300', 'hover:text-blue-300');
+            } else {
+                authSubtitleLogin.classList.add('-translate-y-8', 'opacity-0');
+                authSubtitleRegister.classList.remove('translate-y-8', 'opacity-0');
+                
+                emailContainer.classList.remove('max-h-0', 'opacity-0');
+                emailContainer.classList.add('max-h-32', 'opacity-100');
+
+                confirmPassContainer.classList.remove('max-h-0', 'opacity-0');
+                confirmPassContainer.classList.add('max-h-32', 'opacity-100');
+                confirmPassInput.disabled = false;
+                emailInput.disabled = false;
+
+                emailInput.tabIndex = 0;
+                confirmPassInput.tabIndex = 0;
+
+                authSubmitBtn.className = "mt-2 w-full py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 min-h-[44px] bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20";
+                authBtnText.textContent = "CREATE ACCOUNT";
+                authSwitchText.textContent = "Sudah punya akun? ";
+                authSwitchBtn.textContent = "Masuk";
+                authSwitchBtn.classList.replace('text-blue-400', 'text-green-400');
+                authSwitchBtn.classList.replace('hover:text-blue-300', 'hover:text-green-300');
+            }
+        }
+
+        async function handleAuthSubmit(e) {
+            if (e) e.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const email = emailInput.value.trim();
+            const confirmPass = confirmPassInput.value;
+            
+            if (!username) return showToast("Username wajib diisi", 'error');
+            if (!password) return showToast("Password wajib diisi", 'error');
+
+            if (!isLoginMode) {
+                if (!isValidUsername(username)) return showToast("Username hanya boleh huruf, angka, underscore (3-20 karakter)", 'error');
+                if (email && !isValidEmail(email)) return showToast("Format email tidak valid (maks 31 char)", 'error');
+                if (!isValidPassword(password)) return showToast("Password minimal 6 karakter (maks 255)", 'error');
+                if (password !== confirmPass) return showToast("Password tidak cocok", 'error');
+            }
+
+            authSubmitBtn.disabled = true;
+            authBtnText.textContent = "Processing...";
+
+            let res;
+            if (isLoginMode) {
+                res = await api.login(username, password);
+            } else {
+                res = await api.register(username, password, email);
+            }
+
+            authSubmitBtn.disabled = false;
+            authBtnText.textContent = isLoginMode ? "LOG IN" : "CREATE ACCOUNT";
+
+            if (res.success) {
+                if (isLoginMode) {
+                    const userData = res.data;
+                    state.user = { username: userData.username, email: userData.email };
+                    state.score = userData.score;
+                    if(userData.streak) state.streak = userData.streak; 
+                    
+                    socketService.connect();
+                    authModal.classList.add('hidden');
+                    usernameInput.value = ''; passwordInput.value = '';
+                    
+                    // Trigger skeleton loader immediately
+                    state.currentQuestion = null; 
+                    initGame();
+                    
+                    renderStreakBadge(); 
+                    renderHeader();
+                    renderBackground();
+                    renderLeaderboard();
+                    fetchLeaderboardData(); 
+                    
+                    if (!document.fullscreenElement) {
+                         fullscreenModal.classList.remove('hidden');
+                    }
+                } else {
+                    toggleAuthMode();
+                    showToast("Registrasi sukses. Silakan login.", 'success');
+                }
+            } else {
+                showToast(res.message || "Gagal.", 'error');
+            }
+        }
+
+        function showNotification(msg, type = 'error') {
+            showToast(msg, type);
+        }
+
+        function openAuthModal() {
+            authModal.classList.remove('hidden');
+            authCloseBtn.classList.remove('hidden');
+        }
+
+        function showUserInfoModal() {
+            if (!state.user) return;
+            infoScore.textContent = formatScore(state.score);
+            infoStreak.textContent = state.streak || 0;
+            infoUsername.textContent = state.user.username;
+            infoEmail.textContent = state.user.email || "Belum ada";
+            
+            userInfoModal.classList.remove('hidden');
+        }
+        
+        function openEditModal(type) {
+            currentEditMode = type;
+            editModalTitle.textContent = type === 'username' ? 'Ubah Username' : 'Ubah Email';
+            editLabelInput.textContent = type === 'username' ? 'USERNAME BARU' : 'EMAIL BARU';
+            editMessage.classList.add('hidden');
+            
+            const saveBtn = document.getElementById('edit-save-btn');
+            if (type === 'email') {
+                saveBtn.textContent = "Kirim Link Verifikasi";
+                saveBtn.classList.replace('text-sm', 'text-[10px]'); 
+            } else {
+                saveBtn.textContent = "Simpan";
+                saveBtn.classList.replace('text-[10px]', 'text-sm');
+            }
+
+            editInputValue.value = "";
+            editInputPassword.value = "";
+            editModal.classList.remove('hidden');
+        }
+
+        async function handleEditSubmit(e) {
+            e.preventDefault();
+            const newVal = editInputValue.value.trim();
+            const pass = editInputPassword.value;
+            
+            if(!newVal || !pass) {
+                editMessage.textContent = "Semua field wajib diisi";
+                editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                return;
+            }
+            
+            if (currentEditMode === 'username' && !isValidUsername(newVal)) {
+                editMessage.textContent = "Username tidak valid";
+                editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                return;
+            }
+            if (currentEditMode === 'email' && !isValidEmail(newVal)) {
+                editMessage.textContent = "Email tidak valid (maks 31 char)";
+                editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                return;
+            }
+            if (!isValidPassword(pass)) {
+                editMessage.textContent = "Password minimal 6 karakter";
+                editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                return;
+            }
+
+            let res;
+            if(currentEditMode === 'username') {
+                res = await api.updateUsername(newVal, pass);
+                if(res.success) {
+                    editModal.classList.add('hidden');
+                    userInfoModal.classList.add('hidden');
+                    showConnectionModal("Username Diubah", res.message || "Username berhasil diperbarui. Silakan muat ulang.", true);
+                } else {
+                    editMessage.textContent = res.message || "Gagal memperbarui username";
+                    editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                }
+            } else {
+                res = await api.updateEmail(newVal, pass);
+                editMessage.textContent = res.message || (res.success ? "Link terkirim!" : "Gagal mengirim link");
+                editMessage.className = res.success ? "text-emerald-400 text-xs text-center mb-3 block" : "text-rose-400 text-xs text-center mb-3 block";
+                // Don't close modal on success immediately so user can read message
+            }
+        }
+        
+        function setPlaceholderState() {
+             state.currentQuestion = {
+                id: 'placeholder',
+                vocab: 'Vocabulary',
+                choices: ['Jawaban 1', 'Jawaban 2', 'Jawaban 3', 'Jawaban 4', 'Jawaban 5'],
+                answer: null 
+            };
+            state.score = -1;
+            renderQuiz();
+        }
+
+        function handleAnswer(choice) {
+            if (state.quizUI.isValidating || state.quizUI.selectedAnswer) return;
+
+            state.quizUI.selectedAnswer = choice;
+            state.quizUI.isValidating = true;
+            state.quizUI.animationFinished = false;
+            state.quizUI.pendingResult = null;
+            renderQuiz();
+
+            if (state.user) {
+                if (!socket || !socket.connected) {
+                     showToast("Koneksi terputus. Menghubungkan kembali...", 'error');
+                     return;
+                }
+                socketService.submitAnswer(choice); 
+            } else {
+                 setTimeout(() => {
+                    state.quizUI.selectedAnswer = null;
+                    state.quizUI.isValidating = false;
+                    renderQuiz();
+                }, 1000);
+                return;
+            }
+
+            setTimeout(() => {
+                state.quizUI.animationFinished = true;
+                checkReveal();
+            }, 1000); 
+        }
+
+        function checkReveal() {
+            if (state.quizUI.animationFinished && state.quizUI.pendingResult) {
+                const res = state.quizUI.pendingResult;
+                const isCorrect = res.correct;
+                
+                state.quizUI.isValidating = false;
+                state.quizUI.correctAnswerText = res.correctAnswer;
+                
+                if (res.points_added && isCorrect) {
+                    state.score += res.points_added;
+                    
+                    // Floating score animation
+                    const floater = document.createElement('div');
+                    floater.textContent = `+${res.points_added}`;
+                    floater.className = 'absolute -top-6 right-2 text-emerald-400 font-black text-lg animate-float-up-fade pointer-events-none drop-shadow-md z-50';
+                    document.getElementById('score-container').appendChild(floater);
+                    
+                    setTimeout(() => floater.remove(), 1000);
+                }
+                
+                // Set streak based on result or wait for next? Backend returns it.
+                // If incorrect, we delayed the reset to here to prevent spoilers.
+                if (!isCorrect) {
+                    state.streak = 0;
+                    renderBackground(); 
+                    renderHeader(); 
+                    renderStreakBadge(); 
+                } else {
+                    state.streak = res.streak || state.streak;
+                }
+
+                if (state.user) {
+                    let increment = (isCorrect && res.points_added) ? res.points_added : 0;
+                    updateLeaderboardRealtime(state.user.username, increment, state.streak);
+                }
+
+                if(isCorrect) {
+                    const sd = document.getElementById('score-display');
+                    sd.classList.add('text-amber-200');
+                    document.getElementById('score-container').classList.add('animate-score-pop');
+                    setTimeout(() => {
+                        sd.classList.remove('text-amber-200');
+                        document.getElementById('score-container').classList.remove('animate-score-pop');
+                    }, 400);
+                }
+                
+                renderStreakBadge();
+                renderHeader();
+                renderBackground();
+                renderQuiz(); 
+
+                setTimeout(() => {
+                    state.quizUI.isTransitioning = true;
+                    renderQuiz();
+                    
+                    setTimeout(() => {
+                        state.quizUI = { selectedAnswer: null, isValidating: false, isTransitioning: false, correctAnswerText: null, animationFinished: false, pendingResult: null };
+                        
+                        if (socket && socket.connected) {
+                            socketService.getQuestion(); 
+                        } else {
+                            socketService.getQuestion();
+                        }
+                    }, 300);
+                }, 1000);
+            }
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch((err) => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        }
+
+        async function fetchLeaderboardData() {
+            state.lbStatus = 'loading';
+            renderLeaderboard();
+            
+            const res = await api.getLeaderboard();
+            if (res.success && Array.isArray(res.data)) {
+                state.leaderboard = res.data;
+            }
+            state.lbStatus = 'success';
+            renderLeaderboard();
+
+            setTimeout(() => {
+                state.lbStatus = 'cooldown';
+                state.lbCooldown = 5;
+                renderLeaderboard();
+                
+                clearInterval(lbInterval);
+                lbInterval = setInterval(() => {
+                    state.lbCooldown--;
+                    if (state.lbCooldown <= 0) {
+                        state.lbStatus = 'idle';
+                        clearInterval(lbInterval);
+                    }
+                    renderLeaderboard();
+                }, 1000);
+            }, 1000);
+        }
+        
+        async function handleHashNavigation() {
+            const hash = window.location.hash;
+            if (hash.startsWith('#verify-email?token=')) {
+                const token = hash.split('token=')[1];
+                if (token && isValidToken(token)) {
+                    verifyProcessModal.classList.remove('hidden');
+                    
+                    const res = await api.verifyEmail(token);
+                    verifySpinner.classList.add('hidden');
+                    
+                    if (res.success) {
+                        verifyTitle.textContent = "Verifikasi Berhasil!";
+                        verifyDesc.textContent = res.message || "Email Anda telah berhasil diverifikasi.";
+                        verifyIcon.classList.remove('hidden');
+                        verifyBackBtn.classList.remove('hidden'); 
+                    } else {
+                         verifyTitle.textContent = "Verifikasi Gagal";
+                         verifyDesc.textContent = res.message || "Token tidak valid atau kedaluwarsa.";
+                         verifyErrorIcon.classList.remove('hidden');
+                         verifyBackBtn.classList.remove('hidden'); 
+                    }
+                } else if (token) {
+                     verifyProcessModal.classList.remove('hidden');
+                     verifySpinner.classList.add('hidden');
+                     verifyTitle.textContent = "Verifikasi Gagal";
+                     verifyDesc.textContent = "Format token tidak valid.";
+                     verifyErrorIcon.classList.remove('hidden');
+                     verifyBackBtn.classList.remove('hidden'); 
+                }
+            } else if (hash.startsWith('#reset-password?token=')) {
+                const token = hash.split('token=')[1];
+                if (token && isValidToken(token)) {
+                     newPasswordModal.classList.remove('hidden');
+                     
+                     newPasswordForm.onsubmit = async (e) => {
+                         e.preventDefault();
+                         const pass = npInput.value;
+                         const confirm = npConfirm.value;
+                         
+                         if (!isValidPassword(pass)) {
+                             npMessage.textContent = "Password minimal 6 karakter (maks 255)";
+                             npMessage.className = "block text-center mb-3 text-rose-400 text-sm";
+                             return;
+                         }
+                         if (pass !== confirm) {
+                             npMessage.textContent = "Password tidak cocok";
+                             npMessage.className = "block text-center mb-3 text-rose-400 text-sm";
+                             return;
+                         }
+                         
+                         npSubmitBtn.disabled = true;
+                         npSubmitBtn.textContent = "Menyimpan...";
+                         
+                         const res = await api.confirmResetPassword(token, pass);
+                         
+                         npSubmitBtn.disabled = false;
+                         npSubmitBtn.textContent = "Simpan Password Baru";
+                         
+                         if (res.success) {
+                             npFormView.classList.add('hidden');
+                             npSuccessView.classList.remove('hidden');
+                             npSuccessView.classList.add('flex');
+                         } else {
+                             npMessage.textContent = res.message || "Gagal mengubah password";
+                             npMessage.className = "block text-center mb-3 text-rose-400 text-sm";
+                         }
+                     };
+                } else if (token) {
+                     newPasswordModal.classList.remove('hidden');
+                     npFormView.classList.add('hidden');
+                     const npErrorView = document.getElementById('np-error-view');
+                     if(npErrorView) {
+                         npErrorView.classList.remove('hidden');
+                         npErrorView.classList.add('flex');
+                         document.getElementById('np-error-desc').textContent = "Format token tidak valid.";
+                         document.getElementById('np-error-back-btn').onclick = () => {
+                             newPasswordModal.classList.add('hidden');
+                             window.history.replaceState(null, null, ' ');
+                             startMainApp();
+                         }
+                     }
+                }
+            }
+        }
+        
+        // Navigation from Modals back to Main App
+        verifyBackBtn.addEventListener('click', () => {
+            verifyProcessModal.classList.add('hidden');
+            window.history.replaceState(null, null, ' ');
+            startMainApp();
+        });
+        
+        npBackBtn.addEventListener('click', () => {
+            newPasswordModal.classList.add('hidden');
+            window.history.replaceState(null, null, ' ');
+            startMainApp(); 
+            // openAuthModal() can be called inside startMainApp if not logged in
+        });
+
+        // ==========================================
+        // SECTION 3: RENDER UI FUNCTIONS
+        // ==========================================
+
+        function renderHeader() {
+            const userSection = document.getElementById('navbar-user-section');
+            const logo = document.getElementById('navbar-logo-container');
+            
+            if (state.streak >= 10) logo.classList.add('animate-logo-shake');
+            else logo.classList.remove('animate-logo-shake');
+
+            const logoText = document.getElementById('logo-text-vocab');
+            if (state.streak >= 10) {
+                logoText.className = "text-fire";
+            } else {
+                logoText.className = "text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400";
+            }
+
+            if (state.user) {
+                const statusDot = (socket && socket.connected) 
+                    ? '<span class="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>' 
+                    : '<span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>';
+
+                userSection.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="hidden md:flex flex-col items-end">
+                            <div class="flex items-center gap-1.5">
+                                ${statusDot}
+                                <span class="text-xs font-bold text-slate-300">${state.user.username}</span>
+                            </div>
+                        </div>
+                        <button id="desktop-user-info-btn" class="hidden md:block p-2 text-slate-400 hover:text-white transition-colors" title="Profil Saya">
+                           <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                        </button>
+                        <button id="fullscreen-btn" class="p-2 text-slate-400 hover:text-white transition-colors" title="Toggle Fullscreen">
+                           ${Icons.Fullscreen}
+                        </button>
+                        <button id="logout-confirm-btn-header" class="flex items-center gap-2 px-3 py-1.5 border border-rose-900/50 text-rose-400 bg-dark-800 rounded-xl text-xs font-bold hover:bg-rose-900/20 transition-all shadow-sm" title="Logout">
+                            ${Icons.LogOut} <span class="hidden md:inline">Logout</span>
+                        </button>
+                    </div>
+                `;
+                document.getElementById('logout-confirm-btn-header').addEventListener('click', () => {
+                    document.getElementById('logout-modal').classList.remove('hidden');
+                });
+                document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+                document.getElementById('desktop-user-info-btn').addEventListener('click', showUserInfoModal);
+            } else {
+                userSection.innerHTML = `
+                    <button id="login-trigger-btn" class="flex items-center gap-2 px-3 py-1.5 bg-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-900 hover:bg-indigo-700 transition-all">
+                        ${Icons.LogIn} <span class="hidden md:inline">Login</span>
+                    </button>
+                `;
+                document.getElementById('login-trigger-btn').addEventListener('click', openAuthModal);
+            }
+
+            const navbar = document.getElementById('navbar');
+            if (state.streak >= 10) navbar.style.borderColor = 'rgba(220, 38, 38, 0.5)';
+            else navbar.style.borderColor = '';
+        }
+
+        function renderBackground() {
+            const root = document.getElementById('app-root');
+            const vignette = document.getElementById('fire-vignette');
+            
+            if (state.streak >= 10) {
+                root.classList.remove('bg-normal');
+                root.classList.add('bg-fire');
+                vignette.classList.remove('hidden');
+                startParticleLoop();
+            } else {
+                root.classList.add('bg-normal');
+                root.classList.remove('bg-fire');
+                vignette.classList.add('hidden');
+            }
+        }
+
+        function renderStreakBadge() {
+            const container = document.getElementById('streak-badge-container');
+            container.innerHTML = '';
+            
+            if (state.streak < 2) return;
+
+            const div = document.createElement('div');
+            let badgeClass = "flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-sm transition-all duration-500 animate-pop-in border ";
+            let iconHTML = "";
+            let textClass = "";
+
+            if (state.streak >= 10) {
+                badgeClass += "bg-rose-900/60 border-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.4)] animate-shake-intense scale-110";
+                iconHTML = `<span class="text-rose-500 animate-fire-pulse">${Icons.Fire}</span>`;
+                textClass = "bg-gradient-to-r from-yellow-400 via-red-500 to-yellow-400 animate-gradient-text";
+            } else if (state.streak >= 5) {
+                badgeClass += "bg-orange-900/40 border-orange-500 text-orange-200 shadow-[0_0_10px_rgba(249,115,22,0.3)]";
+                iconHTML = `<span class="text-orange-500 animate-pulse">${Icons.FireOutline}</span>`;
+            } else {
+                badgeClass += "bg-amber-900/30 border-amber-500/50 text-amber-200";
+                iconHTML = `<span class="text-amber-500">${Icons.FireOutline}</span>`;
+            }
+
+            div.className = badgeClass;
+            div.innerHTML = `${iconHTML}<span class="${textClass}">${state.streak}</span>`;
+            container.appendChild(div);
+        }
+
+        function renderQuiz() {
+            const loader = document.getElementById('quiz-loader');
+            const container = document.getElementById('quiz-container');
+            const card = document.getElementById('quiz-card');
+            const questionText = document.getElementById('question-vocab');
+            const choicesContainer = document.getElementById('choices-container');
+            const scoreDisplay = document.getElementById('score-display');
+            const scoreContainer = document.getElementById('score-container');
+
+            if (!state.currentQuestion) {
+                loader.classList.remove('hidden');
+                container.classList.add('hidden');
+                return;
+            }
+
+            loader.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            // Fixed max-h-full to prevent scrolling on normal height devices
+            card.className = "w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden max-h-full my-auto border-2 transition-all duration-500 relative border-dark-700"; 
+            if (state.streak >= 10) card.classList.add('card-fire-glow-red');
+            else if (state.streak >= 5) card.classList.add('card-fire-glow-orange');
+            else if (state.streak >= 3) card.classList.add('border-amber-500/50', 'shadow-amber-500/20', 'shadow-lg');
+            else card.classList.add('border-dark-700');
+
+            if (state.quizUI.isTransitioning) {
+                container.classList.remove('opacity-100', 'scale-100');
+                container.classList.add('opacity-0', 'scale-95');
+            } else {
+                container.classList.add('opacity-100', 'scale-100');
+                container.classList.remove('opacity-0', 'scale-95');
+            }
+
+            scoreDisplay.textContent = formatScore(state.score);
+            scoreDisplay.className = "text-base font-extrabold text-amber-400 leading-none transition-colors";
+            scoreContainer.className = "bg-amber-900/30 border border-amber-700/50 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2 transition-transform duration-300";
+            
+            renderStreakBadge();
+
+            questionText.textContent = state.currentQuestion.vocab;
+
+            choicesContainer.innerHTML = '';
+            const tmpl = document.getElementById('template-choice-btn');
+            
+            state.currentQuestion.choices.forEach(choice => {
+                const clone = tmpl.content.cloneNode(true);
+                const btn = clone.querySelector('button');
+                const span = clone.querySelector('span');
+                
+                span.textContent = choice;
+                
+                const isSelected = state.quizUI.selectedAnswer === choice;
+                const isCorrectAnswer = state.quizUI.correctAnswerText === choice;
+
+                let btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center min-h-[52px] text-center shadow-sm overflow-hidden relative group border-2 ";
+                
+                if (state.streak >= 10) btnClass += "bg-dark-900 text-slate-300 hover:bg-red-900/30 hover:border-red-500 border-dark-700 ";
+                else if (state.streak >= 5) btnClass += "bg-dark-900 text-slate-300 hover:bg-orange-900/30 hover:border-orange-500 border-dark-700 ";
+                else btnClass += "bg-dark-900 text-slate-300 hover:bg-dark-700 hover:text-white border-dark-700 ";
+
+                if (state.quizUI.selectedAnswer) {
+                    btn.disabled = true;
+                    if (state.quizUI.isValidating) {
+                        if (isSelected) {
+                            btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-dark-900 text-white border-2 border-amber-500/50 shadow-md";
+                            const fill = document.createElement('div');
+                            fill.className = "absolute inset-0 bg-amber-500/20 animate-fill-bar origin-left z-0 opacity-100";
+                            btn.appendChild(fill);
+                        } else {
+                            btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-dark-900 text-slate-500 border-2 border-transparent opacity-40 cursor-not-allowed";
+                        }
+                    } else if (state.quizUI.correctAnswerText) { // Result received
+                         if (isCorrectAnswer) {
+                            btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-emerald-600 text-white border-2 border-emerald-500 shadow-emerald-900/50 scale-[1.02] z-10";
+                        } else if (isSelected) {
+                            btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-rose-600 text-white border-2 border-rose-500 shadow-rose-900/50";
+                        } else {
+                            btnClass += " opacity-0 pointer-events-none transform scale-90"; 
+                        }
+                    }
+                } else {
+                    if(state.streak >= 5 && !state.quizUI.selectedAnswer) {
+                        if (state.streak >= 10) btnClass += "card-fire-glow-red "; 
+                        else if (state.streak >= 5) btnClass += "card-fire-glow-orange "; 
+                    }
+                    btn.onclick = () => handleAnswer(choice);
+                }
+
+                btn.className = btnClass;
+                choicesContainer.appendChild(btn);
+            });
+        }
+
+        function renderLeaderboard() {
+            const lbCard = document.getElementById('leaderboard-card');
+            const lbHeader = document.getElementById('leaderboard-header');
+            const lbBody = document.getElementById('leaderboard-body');
+            const btn = document.getElementById('refresh-lb-btn');
+            const myRankRow = document.getElementById('current-user-rank-row');
+            
+            const mobileBtn = document.getElementById('mobile-user-info-btn');
+            if (mobileBtn) {
+                 if (state.user) {
+                     mobileBtn.classList.remove('hidden');
+                     mobileBtn.onclick = showUserInfoModal;
+                 } else {
+                     mobileBtn.classList.add('hidden');
+                 }
+            }
+
+            if (state.streak >= 10) {
+                lbCard.className = "bg-dark-800 rounded-3xl shadow-xl shadow-red-900/30 overflow-hidden border border-red-900/50 flex flex-col relative mb-4 flex-1 min-h-0 transition-all duration-1000";
+                lbHeader.className = "bg-gradient-to-r from-red-900 to-orange-900 p-4 relative flex items-center justify-center text-white shrink-0 shadow-lg z-20 border-b border-white/10 transition-all duration-1000";
+            } else {
+                lbCard.className = "bg-dark-800 rounded-3xl shadow-xl shadow-black/20 overflow-hidden border border-dark-700 flex flex-col relative mb-4 flex-1 min-h-0 transition-all duration-1000";
+                lbHeader.className = "bg-gradient-to-r from-indigo-800 to-purple-900 p-4 relative flex items-center justify-center text-white shrink-0 shadow-lg z-20 border-b border-white/10 transition-all duration-1000";
+            }
+
+            if (state.user) {
+                btn.classList.add('hidden');
+            } else {
+                btn.classList.remove('hidden');
+                if (state.lbStatus === 'loading') {
+                    btn.className = "w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-dark-800 text-slate-400 cursor-wait border border-dark-700 shrink-0";
+                    btn.textContent = "Updating...";
+                    btn.disabled = true;
+                } else if (state.lbStatus === 'success') {
+                    btn.className = "w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-emerald-900/30 text-emerald-400 border border-emerald-800/50 shadow-emerald-900/20 shrink-0";
+                    btn.textContent = "Updated!";
+                    btn.disabled = false;
+                } else if (state.lbStatus === 'cooldown') {
+                    btn.className = "w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-dark-900 text-slate-500 cursor-not-allowed border border-dark-800 shrink-0";
+                    btn.textContent = `Wait ${state.lbCooldown}s`;
+                    btn.disabled = true;
+                } else {
+                    btn.className = "w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-dark-800 border border-dark-700 text-indigo-400 hover:bg-dark-700 hover:border-indigo-500/50 hover:shadow-lg active:scale-[0.98] shrink-0";
+                    btn.textContent = "Refresh Leaderboard";
+                    btn.disabled = false;
+                }
+            }
+
+            lbBody.innerHTML = '';
+            const tmpl = document.getElementById('template-lb-row');
+
+            let displayList = [...state.leaderboard];
+            if (state.user) {
+                const exists = displayList.find(u => u.username === state.user.username);
+                if (!exists) {
+                    displayList.push({ 
+                        username: state.user.username, 
+                        score: state.score,
+                        streak: state.streak || 0 
+                    });
+                } else {
+                    exists.score = Math.max(exists.score, state.score);
+                    if (exists.username === state.user.username) {
+                        exists.streak = state.streak;
+                    }
+                }
+            }
+            displayList.sort((a,b) => b.score - a.score);
+            
+            displayList.forEach((u, index) => {
+                const rank = index + 1;
+                const isMe = state.user && u.username === state.user.username;
+                
+                const clone = tmpl.content.cloneNode(true);
+                const tr = clone.querySelector('tr');
+                const rankCell = clone.querySelector('.rank-cell');
+                const userCell = clone.querySelector('.username-cell');
+                const streakCell = clone.querySelector('.streak-cell');
+                const scoreCell = clone.querySelector('.score-cell');
+
+                rankCell.textContent = rank;
+                userCell.textContent = u.username;
+                streakCell.textContent = u.streak || 0; 
+                scoreCell.textContent = formatScore(u.score);
+
+                if (isMe) {
+                    if (state.streak >= 10) {
+                        tr.classList.add('bg-red-900/20', 'hover:bg-red-900/30');
+                        userCell.classList.add('text-red-400', 'animate-pulse');
+                        userCell.classList.remove('text-slate-300');
+                    } else {
+                        tr.classList.add('bg-amber-900/20', 'hover:bg-amber-900/30');
+                        userCell.classList.add('text-amber-400');
+                        userCell.classList.remove('text-slate-300');
+                    }
+                }
+
+                lbBody.appendChild(tr);
+            });
+
+            const myRankData = displayList.findIndex(u => state.user && u.username === state.user.username);
+            if (myRankData !== -1) {
+                myRankRow.classList.remove('hidden');
+                myRankRow.className = `border-t shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] px-0 transition-colors duration-1000 ${state.streak >= 10 ? 'bg-red-900/20 border-red-900/30' : 'bg-amber-900/20 border-amber-900/30'}`;
+                
+                myRankRow.innerHTML = `
+                    <table class="w-full table-fixed">
+                        <tbody class="text-sm md:text-base">
+                            <tr class="${state.streak >= 10 ? 'text-red-400' : 'text-amber-400'}">
+                                <td class="px-2 py-3 font-bold w-[15%] text-center">#${myRankData + 1}</td>
+                                <td class="px-4 py-3 font-bold w-[55%] truncate">You</td>
+                                <td class="px-4 py-3 text-right font-mono font-bold w-[30%]">${formatScore(displayList[myRankData].score)}</td>
+                                <td class="px-2 py-3 font-bold w-[15%] text-center text-orange-500">${state.streak || 0}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
+            } else {
+                myRankRow.classList.add('hidden');
+            }
+        }
+
+        function updateLeaderboardRealtime(username, increment, newStreak) {
+            if (!state.user || state.leaderboard.length === 0) return; 
+            
+            let userObj = state.leaderboard.find(u => u.username === username);
+            if (userObj) {
+                // Pastikan sinkron dengan state master jika itu adalah user kita sendiri
+                if (state.user && username === state.user.username) {
+                    userObj.score = state.score;
+                    userObj.streak = state.streak;
+                } else {
+                    userObj.score += increment;
+                    userObj.streak = newStreak;
+                }
+            } else {
+                userObj = { 
+                    username: username, 
+                    score: (state.user && username === state.user.username) ? state.score : increment, 
+                    streak: newStreak 
+                };
+                state.leaderboard.push(userObj);
+                renderLeaderboard(); 
+                return;
+            }
+            
+            state.leaderboard.sort((a, b) => b.score - a.score);
+            
+            const tbody = document.getElementById('leaderboard-body');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            let targetRow = null;
+            let targetRowIndex = -1;
+            
+            rows.forEach((row, idx) => {
+                const usernameCell = row.querySelector('.username-cell');
+                if (usernameCell && usernameCell.textContent === username) {
+                    targetRow = row;
+                    targetRowIndex = idx;
+                }
+            });
+
+            if (targetRow) {
+                targetRow.querySelector('.score-cell').textContent = formatScore(userObj.score);
+                targetRow.querySelector('.streak-cell').textContent = userObj.streak;
+                
+                let newIndex = state.leaderboard.findIndex(u => u.username === username);
+                
+                if (newIndex !== targetRowIndex) {
+                    const referenceNode = rows[newIndex];
+                    if (newIndex < targetRowIndex) {
+                        tbody.insertBefore(targetRow, referenceNode);
+                    } else {
+                        tbody.insertBefore(targetRow, rows[newIndex + 1] || null);
+                    }
+                    
+                    const updatedRows = Array.from(tbody.querySelectorAll('tr'));
+                    updatedRows.forEach((row, idx) => {
+                        row.querySelector('.rank-cell').textContent = idx + 1;
+                    });
+                }
+
+                // Perbarui styling baris spesifik current user
+                if (state.user && username === state.user.username) {
+                    const myRankRow = document.getElementById('current-user-rank-row');
+                    if (myRankRow && !myRankRow.classList.contains('hidden')) {
+                        const rankCell = myRankRow.querySelector('td:nth-child(1)');
+                        const scoreCell = myRankRow.querySelector('td:nth-child(3)');
+                        const streakCell = myRankRow.querySelector('td:nth-child(4)');
+                        const tr = myRankRow.querySelector('tr');
+                        
+                        if (rankCell) rankCell.textContent = `#${newIndex + 1}`;
+                        if (scoreCell) scoreCell.textContent = formatScore(userObj.score);
+                        if (streakCell) streakCell.textContent = userObj.streak;
+
+                        myRankRow.className = `border-t shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] px-0 transition-colors duration-1000 ${userObj.streak >= 10 ? 'bg-red-900/20 border-red-900/30' : 'bg-amber-900/20 border-amber-900/30'}`;
+                        if (tr) tr.className = userObj.streak >= 10 ? 'text-red-400' : 'text-amber-400';
+                    }
+                    
+                    const userCell = targetRow.querySelector('.username-cell');
+                    if (userObj.streak >= 10) {
+                        targetRow.classList.add('bg-red-900/20', 'hover:bg-red-900/30');
+                        targetRow.classList.remove('bg-amber-900/20', 'hover:bg-amber-900/30');
+                        userCell.classList.add('text-red-400', 'animate-pulse');
+                        userCell.classList.remove('text-amber-400', 'text-slate-300');
+                    } else {
+                        targetRow.classList.remove('bg-red-900/20', 'hover:bg-red-900/30');
+                        targetRow.classList.add('bg-amber-900/20', 'hover:bg-amber-900/30');
+                        userCell.classList.remove('text-red-400', 'animate-pulse');
+                        userCell.classList.add('text-amber-400');
+                        userCell.classList.remove('text-slate-300');
+                    }
+                }
+            } else {
+                renderLeaderboard();
+            }
+        }
+
+        function renderView() {
+            const quizCol = document.getElementById('quiz-col');
+            const lbCol = document.getElementById('leaderboard-col');
+            const btnQuiz = document.getElementById('nav-btn-quiz');
+            const btnRank = document.getElementById('nav-btn-rank');
+
+            const activeClass = state.streak >= 10 ? 'bg-red-800 text-white' : 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105';
+            const inactiveClass = 'text-slate-400 hover:text-white';
+
+            if (state.view === 'quiz') {
+                btnQuiz.className = `flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 ${activeClass}`;
+                btnRank.className = `flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 ${inactiveClass}`;
+            } else {
+                btnQuiz.className = `flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 ${inactiveClass}`;
+                btnRank.className = `flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 ${activeClass}`;
+            }
+
+            if (state.view === 'quiz') {
+                quizCol.classList.remove('hidden');
+                lbCol.classList.add('hidden');
+                lbCol.classList.add('md:flex');
+            } else {
+                quizCol.classList.add('hidden');
+                quizCol.classList.add('md:flex');
+                lbCol.classList.remove('hidden');
+            }
+        }
+
+        // ==========================================
+        // SECTION 4: INITIALIZATION & EVENTS
+        // ==========================================
+
+        function initGame() {
+            renderQuiz();
+
+            if (socket && state.user) {
+                // Prevent duplicate listeners by removing old ones first
+                socketService.off("new_question");
+                socketService.off("answer_result");
+                socketService.off("leaderboard-update");
+
+                // Setup Listeners
+                socketService.onLeaderboardUpdate((data) => {
+                    updateLeaderboardRealtime(data.username, data.increment, data.streak);
+                });
+
+                socketService.onQuestionReceived((q) => {
+                    console.log("Question received:", q);
+                    state.currentQuestion = q;
+                    // Reset UI for new question
+                    state.quizUI.selectedAnswer = null;
+                    state.quizUI.isValidating = false;
+                    state.quizUI.isTransitioning = false;
+                    state.quizUI.correctAnswerText = null;
+                    state.quizUI.animationFinished = false;
+                    state.quizUI.pendingResult = null;
+                    
+                    retryBtn.classList.add('hidden'); 
+                    retryOverlay.classList.add('hidden');
+                    
+                    renderQuiz();
+                });
+
+                socketService.onAnswerResult((res) => {
+                    console.log("Result received:", res);
+                    state.quizUI.pendingResult = res;
+                    // Removed instant reset here, moved to checkReveal to avoid spoilers
+                    checkReveal();
+                });
+
+                // Request Question Logic
+                const requestQ = () => {
+                    console.log("Requesting question...");
+                    socketService.getQuestion();
+                    // Timeout fallback
+                    setTimeout(() => {
+                        if (!state.currentQuestion || state.currentQuestion.id === 'placeholder') {
+                            console.log("Retry requesting question...");
+                            socketService.getQuestion();
+                            retryBtn.classList.remove('hidden');
+                            retryOverlay.classList.remove('hidden'); 
+                        }
+                    }, 3000);
+                };
+
+                if (socket.connected) {
+                    requestQ();
+                } else {
+                    socket.once("connect", () => {
+                        console.log("Socket connected! Requesting question...");
+                        // Delay execution slightly to allow backend session init
+                        setTimeout(requestQ, 500); 
+                    });
+                }
+            }
+        }
+
+        // --- Event Listeners ---
+
+        window.addEventListener('resize', resizeCanvas);
+        window.addEventListener('mousedown', (e) => {
+            if (state.streak >= 10) { spawnParticles(e.clientX, e.clientY, 8, 'fire'); startParticleLoop(); }
+        });
+
+        // Enter key logic
+        usernameInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isLoginMode) {
+                     passwordInput.focus();
+                } else {
+                     emailInput.focus();
+                }
+            }
+        });
+
+        emailInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                passwordInput.focus();
+            }
+        });
+
+        passwordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                if (isLoginMode) {
+                    e.preventDefault();
+                    usernameInput.blur();
+                    passwordInput.blur();
+                    handleAuthSubmit(e);
+                } else {
+                    e.preventDefault();
+                    confirmPassInput.focus();
+                }
+            }
+        });
+        
+        confirmPassInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !isLoginMode) {
+                e.preventDefault();
+                usernameInput.blur();
+                passwordInput.blur();
+                confirmPassInput.blur();
+                emailInput.blur();
+                handleAuthSubmit(e);
+            }
+        });
+
+        document.getElementById('auth-switch-btn').addEventListener('click', (e) => { e.preventDefault(); toggleAuthMode(); });
+        
+        authCloseBtn.addEventListener('click', () => {
+            authModal.classList.add('hidden');
+            if (!state.user) {
+               setPlaceholderState();
+               fetchLeaderboardData(); 
+            }
+        });
+
+        fullscreenAllowBtn.addEventListener('click', () => {
+            fullscreenModal.classList.add('hidden');
+            toggleFullscreen();
+        });
+
+        fullscreenDenyBtn.addEventListener('click', () => {
+            fullscreenModal.classList.add('hidden');
+        });
+
+        userInfoCloseBtn.addEventListener('click', () => {
+            userInfoModal.classList.add('hidden');
+        });
+
+        editCancelBtn.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+        });
+
+        editForm.addEventListener('submit', handleEditSubmit);
+
+        editUsernameBtn.addEventListener('click', () => openEditModal('username'));
+        editEmailBtn.addEventListener('click', () => openEditModal('email'));
+
+        resetPassInitBtn.addEventListener('click', () => {
+            if (!state.user.email) {
+                showToast("Fitur Reset Password membutuhkan email. Silakan tambahkan email pada akun Anda terlebih dahulu.", 'error');
+                return;
+            }
+            resetEmailTarget.textContent = state.user.email;
+            userInfoModal.classList.add('hidden');
+            resetConfirmModal.classList.remove('hidden');
+        });
+
+        resetCancelBtn.addEventListener('click', () => {
+            resetConfirmModal.classList.add('hidden');
+            userInfoModal.classList.remove('hidden');
+        });
+
+        document.getElementById('reset-confirm-send-btn').addEventListener('click', async () => {
+            const res = await api.resetPassword();
+            
+            if (res.success) {
+                resetConfirmModal.classList.add('hidden');
+                showToast(res.message || "Link reset password dikirim.", 'success');
+            } else {
+                showToast(res.message || "Gagal mengirim link.", 'error');
+            }
+        });
+        
+        authForm.addEventListener('submit', handleAuthSubmit);
+
+        document.getElementById('logout-cancel-btn').addEventListener('click', () => document.getElementById('logout-modal').classList.add('hidden'));
+        document.getElementById('logout-confirm-btn').addEventListener('click', async () => {
+            await api.logout();
+            state.user = null;
+            if(socket) socketService.disconnect();
+            document.getElementById('logout-modal').classList.add('hidden');
+            renderHeader();
+            
+            logoutSuccessModal.classList.remove('hidden');
+            let timeLeft = 3;
+            logoutTimer.textContent = timeLeft;
+            
+            const timer = setInterval(() => {
+                timeLeft--;
+                logoutTimer.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    window.location.reload();
+                }
+            }, 1000);
+
+            logoutRefreshBtn.onclick = () => window.location.reload();
+        });
+
+        connReloadBtn.addEventListener('click', () => {
+            window.location.reload();
+        });
+
+        document.getElementById('nav-btn-quiz').addEventListener('click', () => { state.view = 'quiz'; renderView(); });
+        document.getElementById('nav-btn-rank').addEventListener('click', () => { state.view = 'leaderboard'; renderView(); });
+        document.getElementById('refresh-lb-btn').addEventListener('click', fetchLeaderboardData);
+        retryBtn.addEventListener('click', () => {
+            retryBtn.classList.add('hidden');
+            retryOverlay.classList.add('hidden');
+            socketService.getQuestion();
+        });
+
+        async function startMainApp() {
+            emailInput.tabIndex = -1;
+            confirmPassInput.tabIndex = -1;
+            
+            const res = await api.getMe();
+            if (res.success) {
+                state.user = res.data; 
+                if(res.data.streak) state.streak = res.data.streak; 
+                state.score = res.data.score;
+                
+                socketService.connect();
+                state.currentQuestion = null; // Clear placeholder
+                initGame();
+                
+                renderStreakBadge();
+                renderHeader();
+                renderBackground(); 
+                fetchLeaderboardData();
+                if (!document.fullscreenElement) {
+                    fullscreenModal.classList.remove('hidden');
+                }
+            } else {
+                openAuthModal();
+                setPlaceholderState(); 
+                fetchLeaderboardData(); 
+            }
+        }
+
+        // --- Main Init ---
+        (async function init() {
+            resizeCanvas();
+            renderView();
+            renderHeader();
+
+            if (window.location.hash.startsWith('#verify-email') || window.location.hash.startsWith('#reset-password')) {
+                // If it's a deep link, do NOT run the main logic yet. Wait for user to click back to main.
+                handleHashNavigation();
+            } else {
+                startMainApp();
+            }
+        })();
+
+    </script>
+</body>
+</html>

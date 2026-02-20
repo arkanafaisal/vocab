@@ -1,0 +1,39 @@
+@import "tailwindcss";
+
+/* PENTING: Baris ini memberitahu Tailwind v4 untuk memuat
+  konfigurasi dari file JavaScript legacy (v3 style).
+*/
+@config "../tailwind.config.js";
+
+
+button{
+    cursor: pointer;
+}
+
+
+.custom-scrollbar::-webkit-scrollbar { width: 4px; }
+.custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+.fade-in { animation: fadeIn 0.3s ease-in-out; }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.app-background { transition: background 1.5s ease-in-out; }
+.bg-normal { background-image: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%); }
+.bg-fire { background-image: linear-gradient(135deg, #450a0a 0%, #7c2d12 50%, #991b1b 100%); background-size: 200% 200%; animation: bgPan 10s ease infinite; }
+.fire-vignette { position: fixed; inset: 0; pointer-events: none; background: radial-gradient(circle, transparent 60%, rgba(220, 38, 38, 0.4) 100%); z-index: 5; mix-blend-mode: overlay; animation: heatWave 2s infinite; }
+.text-fire { background: linear-gradient(to bottom, #fef08a 0%, #f59e0b 50%, #dc2626 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0px 2px 4px rgba(220, 38, 38, 0.3); font-weight: 900; }
+.card-fire-glow-orange { box-shadow: 0 0 15px 1px rgba(249, 115, 22, 0.5), 0 0 30px 4px rgba(249, 115, 22, 0.2) inset; border-color: rgba(249, 115, 22, 0.8) !important; }
+.card-fire-glow-red { box-shadow: 0 0 40px 5px rgba(220, 38, 38, 0.5), 0 0 60px 10px rgba(220, 38, 38, 0.2) inset; border-color: rgba(252, 165, 165, 0.9) !important; }
+.animate-gradient-text { background-size: 200% auto; background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textShimmer 2s linear infinite; will-change: background-position; }
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active{
+    -webkit-box-shadow: 0 0 0 30px #0f172a inset !important;
+    -webkit-text-fill-color: white !important;
+}
+
+/* Utility for visibility transitions */
+.hidden-visually { opacity: 0; pointer-events: none; max-height: 0; overflow: hidden; }
+.visible-visually { opacity: 1; pointer-events: auto; max-height: 500px; }

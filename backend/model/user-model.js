@@ -14,13 +14,15 @@ export async function insertUser({username, email, password}) {
 }
 
 export async function authenticateUser(type, identifier, password) {
-    const [[user]] = await db.query(`SELECT id, username, password, score, streak FROM users WHERE ${type} = ?`, [identifier])
+    const [[user]] = await db.query(`SELECT id, username, email, password, score, streak FROM users WHERE ${type} = ?`, [identifier])
     if(!user){return null}
 
     const matchPassword = await bcrypt.compare(password, user.password)
     if(!matchPassword){return null}
 
-    return {id: user.id, username: user.username, score: user.score, streak: user.streak}
+    const {oassword, ...safeUser} = user
+
+    return safeUser
 }
 
 export async function verifyUserById({id}) {
