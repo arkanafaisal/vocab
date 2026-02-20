@@ -89,6 +89,12 @@ userController.updateUsername = async (req, res) => {
         const changedRows = await UserModel.setUsername({id: req.user.id, username: newUsername})
         if(!changedRows){return response(res, false, "user tidak ditemukan", null, 401)}
 
+        const {ok:ok3, data: socketId} = await redisHelper.get("socket", user.username)
+        if(ok3){
+            await forceDisconnect(socketId)
+            await redisHelper.del("socket", user.username)
+        }
+
         return response(res, true, "username berhasil dirubah")
 
 
