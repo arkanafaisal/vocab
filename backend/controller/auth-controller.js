@@ -85,7 +85,7 @@ authController.login = async (req, res) => {
             await redisHelper.del("socket", user.username)
         }
         
-        await redis.incrBy(`vocab:rl:login:${req.ip}`, 10)
+        await redis.incrBy(`vocab:rl:login:${req.ip}`, 5)
         return response(res, true, "login successfull", user)
 
 

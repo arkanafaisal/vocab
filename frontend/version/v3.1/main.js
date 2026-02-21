@@ -72,8 +72,6 @@ const userInfoCloseBtn = document.getElementById('user-info-close-btn');
 const editCancelBtn = document.getElementById('edit-cancel-btn');
 const resetCancelBtn = document.getElementById('reset-cancel-btn');
 const mobileUserInfoBtn = document.getElementById('mobile-user-info-btn');
-
-// Deep Link Modal Elements
 const verifyProcessModal = document.getElementById('verify-process-modal');
 const newPasswordModal = document.getElementById('new-password-modal');
 const verifyTitle = document.getElementById('verify-title');
@@ -90,7 +88,6 @@ const npSubmitBtn = document.getElementById('np-submit-btn');
 const npSuccessView = document.getElementById('np-success-view');
 const npFormView = document.getElementById('np-form-view');
 const npBackBtn = document.getElementById('np-back-btn');
-const npMessage = document.getElementById('np-message');
 
 // User Info Elements
 const infoScore = document.getElementById('info-score');
@@ -108,7 +105,6 @@ const editInputValue = document.getElementById('edit-input-value');
 const editInputPassword = document.getElementById('edit-input-password');
 const editSaveBtn = document.getElementById('edit-save-btn');
 const editForm = document.getElementById('edit-form');
-const editMessage = document.getElementById('edit-message');
 
 // Reset Confirm Elements
 const resetEmailTarget = document.getElementById('reset-email-target');
@@ -176,21 +172,20 @@ async function fetchData(endpoint, method = 'GET', body = null, isRetry = false)
         if (body) options.body = JSON.stringify(body);
 
         let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-        
-        // Pesan error manual untuk 429 dan 500 (tanpa parsing JSON)
+
         if (response.status === 429) {
-            return { success: false, message: "limit tercapai, coba lagi nanti" };
+            showToast("Terlalu banyak permintaan, coba lagi nanti.", 'error');
+            return { success: false, message: "Too Many Requests" };
         }
+
         if (response.status === 500) {
-            return { success: false, message: "server error, harap hubungi admin" };
+            showToast("Terjadi kesalahan server (500)", 'error');
+            return { success: false, message: "Server Error" };
         }
 
-        // Parsing JSON untuk status selain 429 dan 500 (termasuk 403, 401, dll)
-        let responseData = await response.json();
-
-        if (response.status === 401 && !isRetry) {
+        if ((response.status === 401 || response.status === 403) && !isRetry) {
             if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
-                return responseData; 
+                return await response.json(); 
             }
 
             const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
@@ -202,18 +197,12 @@ async function fetchData(endpoint, method = 'GET', body = null, isRetry = false)
                 if (socketService) socketService.disconnect();
                 renderHeader(); 
                 openAuthModal();
-                showToast(responseData.message, 'error');
-                return responseData;
+                showToast("Sesi habis, silakan login kembali", 'error');
+                return { success: false, message: "Session expired" };
             }
         }
 
-        // Tampilkan pesan untuk error 403
-        if (response.status === 403) {
-            showToast(responseData.message, 'error');
-            return responseData;
-        }
-
-        return responseData;
+        return await response.json();
 
     } catch (err) {
         console.error(`API Error (${endpoint}):`, err);
@@ -256,7 +245,6 @@ const api = {
             return await fetchData(`/users/verify-email?token=${token}`, 'GET');
     },
     async confirmResetPassword(token, newPassword) {
-            // UPDATED Endpoint
             return await fetchData(`/users/verify-reset-password?token=${token}`, 'PATCH', { password: newPassword });
     }
 };
@@ -315,7 +303,6 @@ const socketService = {
             });
 
             socket.on("disconnect", (reason) => {
-                console.log("Socket disconnected:", reason);
                 renderHeader();
                 if (state.quizUI.isValidating) {
                     showToast("Koneksi terputus. Silakan coba lagi.", 'error');
@@ -327,8 +314,13 @@ const socketService = {
                 }
             });
 
+            socket.on("connect", () => {
+                state.retryCount = 0;
+                connModal.classList.add('hidden');
+                renderHeader(); 
+            });
+
             socket.on("connect_error", async (err) => {
-                console.log("Socket connect error:", err.message);
                 const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
                 if (res.ok) {
                     socket.connect(); 
@@ -521,9 +513,8 @@ async function handleAuthSubmit(e) {
             authModal.classList.add('hidden');
             usernameInput.value = ''; passwordInput.value = '';
             
-            // Trigger skeleton loader immediately
-            state.currentQuestion = null; 
-            initGame();
+            state.currentQuestion = null; // Forces skeleton loader to appear
+            initGame(); // Rebinds listeners & requests question
             
             renderStreakBadge(); 
             renderHeader();
@@ -536,15 +527,11 @@ async function handleAuthSubmit(e) {
             }
         } else {
             toggleAuthMode();
-            showToast(res.message, 'success');
+            showToast("Registrasi sukses. Silakan login.", 'success');
         }
     } else {
-        showToast(res.message, 'error');
+        showToast(res.message || "Gagal.", 'error');
     }
-}
-
-function showNotification(msg, type = 'error') {
-    showToast(msg, type);
 }
 
 function openAuthModal() {
@@ -566,7 +553,6 @@ function openEditModal(type) {
     currentEditMode = type;
     editModalTitle.textContent = type === 'username' ? 'Ubah Username' : 'Ubah Email';
     editLabelInput.textContent = type === 'username' ? 'USERNAME BARU' : 'EMAIL BARU';
-    editMessage.classList.add('hidden');
     
     const saveBtn = document.getElementById('edit-save-btn');
     if (type === 'email') {
@@ -587,27 +573,11 @@ async function handleEditSubmit(e) {
     const newVal = editInputValue.value.trim();
     const pass = editInputPassword.value;
     
-    if(!newVal || !pass) {
-        editMessage.textContent = "Semua field wajib diisi";
-        editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
-        return;
-    }
+    if(!newVal || !pass) return showToast("Semua field wajib diisi", 'error');
     
-    if (currentEditMode === 'username' && !isValidUsername(newVal)) {
-        editMessage.textContent = "Username tidak valid";
-        editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
-        return;
-    }
-    if (currentEditMode === 'email' && !isValidEmail(newVal)) {
-        editMessage.textContent = "Email tidak valid (maks 31 char)";
-        editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
-        return;
-    }
-    if (!isValidPassword(pass)) {
-        editMessage.textContent = "Password minimal 6 karakter";
-        editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
-        return;
-    }
+    if (currentEditMode === 'username' && !isValidUsername(newVal)) return showToast("Username tidak valid", 'error');
+    if (currentEditMode === 'email' && !isValidEmail(newVal)) return showToast("Email tidak valid (maks 31 char)", 'error');
+    if (!isValidPassword(pass)) return showToast("Password minimal 6 karakter", 'error');
 
     let res;
     if(currentEditMode === 'username') {
@@ -615,16 +585,16 @@ async function handleEditSubmit(e) {
         if(res.success) {
             editModal.classList.add('hidden');
             userInfoModal.classList.add('hidden');
-            showConnectionModal("Username Diubah", res.message, true);
+            showConnectionModal("Username Diubah", res.message || "Username berhasil diperbarui. Silakan muat ulang.", true);
         } else {
-            editMessage.textContent = res.message;
-            editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
+            showToast(res.message || "Gagal memperbarui username", 'error');
         }
     } else {
         res = await api.updateEmail(newVal, pass);
-        editMessage.textContent = res.message;
-        editMessage.className = res.success ? "text-emerald-400 text-xs text-left mb-3 block" : "text-rose-400 text-xs text-left mb-3 block";
-        // Don't close modal on success immediately so user can read message
+        showToast(res.message, res.success ? 'success' : 'error');
+        if(res.success) {
+            editModal.classList.add('hidden');
+        }
     }
 }
 
@@ -677,29 +647,11 @@ function checkReveal() {
         state.quizUI.isValidating = false;
         state.quizUI.correctAnswerText = res.correctAnswer;
         
-        if (res.points_added && isCorrect) {
+        if (res.points_added) {
             state.score += res.points_added;
-            
-            // Floating score animation
-            const floater = document.createElement('div');
-            floater.textContent = `+${res.points_added}`;
-            floater.className = 'absolute -top-6 right-2 text-emerald-400 font-black text-lg animate-float-up-fade pointer-events-none drop-shadow-md z-50';
-            document.getElementById('score-container').appendChild(floater);
-            
-            setTimeout(() => floater.remove(), 1000);
         }
         
-        // Set streak based on result or wait for next? Backend returns it.
-        // If incorrect, we delayed the reset to here to prevent spoilers.
-        if (!isCorrect) {
-            state.streak = 0;
-            renderBackground(); 
-            renderHeader(); 
-            renderStreakBadge(); 
-            renderLeaderboard();
-        } else {
-            state.streak = res.streak || state.streak;
-        }
+        state.streak = res.streak || 0;
 
         if(isCorrect) {
             const sd = document.getElementById('score-display');
@@ -715,7 +667,6 @@ function checkReveal() {
         renderHeader();
         renderBackground();
         renderQuiz(); 
-        renderLeaderboard();
 
         setTimeout(() => {
             state.quizUI.isTransitioning = true;
@@ -786,22 +737,18 @@ async function handleHashNavigation() {
             
             if (res.success) {
                 verifyTitle.textContent = "Verifikasi Berhasil!";
-                verifyDesc.textContent = res.message;
+                verifyDesc.textContent = res.message || "Email Anda telah berhasil diverifikasi.";
                 verifyIcon.classList.remove('hidden');
                 verifyBackBtn.classList.remove('hidden'); 
             } else {
                     verifyTitle.textContent = "Verifikasi Gagal";
-                    verifyDesc.textContent = res.message;
+                    verifyDesc.textContent = res.message || "Token tidak valid atau kedaluwarsa.";
                     verifyErrorIcon.classList.remove('hidden');
                     verifyBackBtn.classList.remove('hidden'); 
             }
         } else if (token) {
-                verifyProcessModal.classList.remove('hidden');
-                verifySpinner.classList.add('hidden');
-                verifyTitle.textContent = "Verifikasi Gagal";
-                verifyDesc.textContent = "Format token tidak valid.";
-                verifyErrorIcon.classList.remove('hidden');
-                verifyBackBtn.classList.remove('hidden'); 
+                showToast("Token tidak valid formatnya", "error");
+                window.history.replaceState(null, null, ' ');
         }
     } else if (hash.startsWith('#reset-password?token=')) {
         const token = hash.split('token=')[1];
@@ -813,16 +760,8 @@ async function handleHashNavigation() {
                     const pass = npInput.value;
                     const confirm = npConfirm.value;
                     
-                    if (!isValidPassword(pass)) {
-                        npMessage.textContent = "Password minimal 6 karakter (maks 255)";
-                        npMessage.className = "block text-left mb-3 text-rose-400 text-sm";
-                        return;
-                    }
-                    if (pass !== confirm) {
-                        npMessage.textContent = "Password tidak cocok";
-                        npMessage.className = "block text-left mb-3 text-rose-400 text-sm";
-                        return;
-                    }
+                    if (!isValidPassword(pass)) return showToast("Password minimal 6 karakter (maks 255)", 'error');
+                    if (pass !== confirm) return showToast("Password tidak cocok", 'error');
                     
                     npSubmitBtn.disabled = true;
                     npSubmitBtn.textContent = "Menyimpan...";
@@ -837,40 +776,30 @@ async function handleHashNavigation() {
                         npSuccessView.classList.remove('hidden');
                         npSuccessView.classList.add('flex');
                     } else {
-                        npMessage.textContent = res.message;
-                        npMessage.className = "block text-left mb-3 text-rose-400 text-sm";
+                        showToast(res.message || "Gagal mengubah password", 'error');
                     }
                 };
         } else if (token) {
-                newPasswordModal.classList.remove('hidden');
-                npFormView.classList.add('hidden');
-                const npErrorView = document.getElementById('np-error-view');
-                if(npErrorView) {
-                    npErrorView.classList.remove('hidden');
-                    npErrorView.classList.add('flex');
-                    document.getElementById('np-error-desc').textContent = "Format token tidak valid.";
-                    document.getElementById('np-error-back-btn').onclick = () => {
-                        newPasswordModal.classList.add('hidden');
-                        window.history.replaceState(null, null, ' ');
-                        startMainApp();
-                    }
-                }
+                showToast("Token tidak valid formatnya", "error");
+                window.history.replaceState(null, null, ' ');
         }
     }
 }
 
-// Navigation from Modals back to Main App
+verifyCloseBtn.addEventListener('click', () => {
+        verifyProcessModal.classList.add('hidden');
+        window.history.replaceState(null, null, ' ');
+});
+
 verifyBackBtn.addEventListener('click', () => {
     verifyProcessModal.classList.add('hidden');
     window.history.replaceState(null, null, ' ');
-    startMainApp();
 });
 
 npBackBtn.addEventListener('click', () => {
     newPasswordModal.classList.add('hidden');
     window.history.replaceState(null, null, ' ');
-    startMainApp(); 
-    // openAuthModal() can be called inside startMainApp if not logged in
+    openAuthModal();
 });
 
 // ==========================================
@@ -996,8 +925,7 @@ function renderQuiz() {
     loader.classList.add('hidden');
     container.classList.remove('hidden');
 
-    // Fixed max-h-full to prevent scrolling on normal height devices
-    card.className = "w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col max-h-full my-auto border-2 transition-all duration-500 relative border-dark-700"; 
+    card.className = "w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden h-full md:max-h-[85vh] border-2 transition-all duration-500 relative"; 
     if (state.streak >= 10) card.classList.add('card-fire-glow-red');
     else if (state.streak >= 5) card.classList.add('card-fire-glow-orange');
     else if (state.streak >= 3) card.classList.add('border-amber-500/50', 'shadow-amber-500/20', 'shadow-lg');
@@ -1230,7 +1158,6 @@ function initGame() {
 
         // Setup Listeners
         socketService.onQuestionReceived((q) => {
-            console.log("Question received:", q);
             state.currentQuestion = q;
             // Reset UI for new question
             state.quizUI.selectedAnswer = null;
@@ -1240,22 +1167,27 @@ function initGame() {
             state.quizUI.animationFinished = false;
             state.quizUI.pendingResult = null;
             
-            retryBtn.classList.add('hidden'); 
+            retryBtn.classList.add('hidden'); // Clear retry visual state if any
             retryOverlay.classList.add('hidden');
             
             renderQuiz();
         });
 
         socketService.onAnswerResult((res) => {
-            console.log("Result received:", res);
             state.quizUI.pendingResult = res;
-            // Removed instant reset here, moved to checkReveal to avoid spoilers
+
+            if (!res.correct) {
+                state.streak = 0;
+                renderBackground(); 
+                renderHeader(); 
+                renderStreakBadge(); 
+            }
+
             checkReveal();
         });
 
         // Request Question Logic
         const requestQ = () => {
-            console.log("Requesting question...");
             socketService.getQuestion();
             // Timeout fallback
             setTimeout(() => {
@@ -1271,9 +1203,10 @@ function initGame() {
         if (socket.connected) {
             requestQ();
         } else {
+            // Using socket.once so we don't accidentally register multiple connection handlers
             socket.once("connect", () => {
                 console.log("Socket connected! Requesting question...");
-                // Delay execution slightly to allow backend session init
+                // 500ms delay to ensure backend session logic binds perfectly before emitting
                 setTimeout(requestQ, 500); 
             });
         }
@@ -1287,7 +1220,6 @@ window.addEventListener('mousedown', (e) => {
     if (state.streak >= 10) { spawnParticles(e.clientX, e.clientY, 8, 'fire'); startParticleLoop(); }
 });
 
-// Enter key logic
 usernameInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
@@ -1369,13 +1301,13 @@ resetPassInitBtn.addEventListener('click', () => {
         return;
     }
     resetEmailTarget.textContent = state.user.email;
-    // Removed userInfoModal.classList.add('hidden'); so it stacks!
+    userInfoModal.classList.add('hidden');
     resetConfirmModal.classList.remove('hidden');
 });
 
 resetCancelBtn.addEventListener('click', () => {
     resetConfirmModal.classList.add('hidden');
-    // Removed userInfoModal.classList.remove('hidden'); since it was never hidden
+    userInfoModal.classList.remove('hidden');
 });
 
 document.getElementById('reset-confirm-send-btn').addEventListener('click', async () => {
@@ -1383,9 +1315,9 @@ document.getElementById('reset-confirm-send-btn').addEventListener('click', asyn
     
     if (res.success) {
         resetConfirmModal.classList.add('hidden');
-        showToast(res.message, 'success');
+        showToast(res.message || "Link reset password dikirim.", 'success');
     } else {
-        showToast(res.message, 'error');
+        showToast(res.message || "Gagal mengirim link.", 'error');
     }
 });
 
@@ -1395,7 +1327,7 @@ document.getElementById('logout-cancel-btn').addEventListener('click', () => doc
 document.getElementById('logout-confirm-btn').addEventListener('click', async () => {
     await api.logout();
     state.user = null;
-    if(socket) socketService.disconnect();
+    socketService.disconnect();
     document.getElementById('logout-modal').classList.add('hidden');
     renderHeader();
     
@@ -1428,7 +1360,14 @@ retryBtn.addEventListener('click', () => {
     socketService.getQuestion();
 });
 
-async function startMainApp() {
+// --- Main Init ---
+(async function init() {
+    handleHashNavigation();
+
+    resizeCanvas();
+    renderView();
+    renderHeader();
+    
     emailInput.tabIndex = -1;
     confirmPassInput.tabIndex = -1;
     
@@ -1437,9 +1376,7 @@ async function startMainApp() {
         state.user = res.data; 
         if(res.data.streak) state.streak = res.data.streak; 
         state.score = res.data.score;
-        
         socketService.connect();
-        state.currentQuestion = null; // Clear placeholder
         initGame();
         
         renderStreakBadge();
@@ -1450,22 +1387,10 @@ async function startMainApp() {
             fullscreenModal.classList.remove('hidden');
         }
     } else {
-        openAuthModal();
-        setPlaceholderState(); 
-        fetchLeaderboardData(); 
-    }
-}
-
-// --- Main Init ---
-(async function init() {
-    resizeCanvas();
-    renderView();
-    renderHeader();
-
-    if (window.location.hash.startsWith('#verify-email') || window.location.hash.startsWith('#reset-password')) {
-        // If it's a deep link, do NOT run the main logic yet. Wait for user to click back to main.
-        handleHashNavigation();
-    } else {
-        startMainApp();
+        if (!window.location.hash.startsWith('#verify-email') && !window.location.hash.startsWith('#reset-password')) {
+            openAuthModal();
+            setPlaceholderState(); 
+            fetchLeaderboardData(); 
+        }
     }
 })();

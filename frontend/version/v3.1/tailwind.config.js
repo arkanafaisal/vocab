@@ -1,19 +1,15 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    "./index.html", 
-    "./main.js"
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+    // Add any other paths to your template files here
   ],
   darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        dark: { 
-          900: '#0f172a', 
-          800: '#1e293b', 
-          700: '#334155', 
-          600: '#475569' 
-        },
+        dark: { 900: '#0f172a', 800: '#1e293b', 700: '#334155', 600: '#475569' },
       },
       fontFamily: {
         sans: [
@@ -39,7 +35,6 @@ module.exports = {
         'bg-pan': 'bgPan 10s ease infinite',
         'heat-wave': 'heatWave 2s ease-in-out infinite',
         'logo-shake': 'logoShake 3s ease-in-out infinite',
-        'float-up-fade': 'floatUpFade 1s ease-out forwards',
       },
       keyframes: {
         popIn: { 
@@ -84,10 +79,6 @@ module.exports = {
         fillBar: { 
           '0%': { width: '0%' }, 
           '100%': { width: '100%' } 
-        },
-        floatUpFade: { 
-          '0%': { opacity: '1', transform: 'translateY(0)' }, 
-          '100%': { opacity: '0', transform: 'translateY(-40px)' } 
         }
       }
     }

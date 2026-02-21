@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vocab Master</title>
+    <link href="./src/output.css" rel="stylesheet">
+    <!-- Socket.IO Client -->
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+</head>
+<body class="bg-slate-900 text-slate-100 h-dvh w-full selection:bg-indigo-500 selection:text-white overflow-hidden select-none font-sans">
+
+    <!-- ROOT CONTAINER -->
+    <div id="app-root" class="flex flex-col h-dvh overflow-hidden relative app-background bg-normal">
+        
+        <!-- CANVAS LAYER -->
+        <canvas id="particle-canvas" class="fixed inset-0 pointer-events-none z-[100]"></canvas>
+        <div id="fire-vignette" class="fire-vignette hidden"></div>
+
+        <!-- MODALS LAYER -->
+        <div id="modal-container">
+
+            <!-- Global Toast Notification -->
+            <div id="global-toast" class="fixed top-6 left-1/2 transform -translate-x-1/2 z-[400] transition-all duration-300 ease-in-out opacity-0 -translate-y-10 pointer-events-none w-full max-w-sm px-4 flex justify-center">
+                <div id="toast-content" class="px-6 py-3 rounded-xl shadow-2xl font-bold text-sm flex items-center gap-3">
+                    <!-- Content injected via JS -->
+                </div>
+            </div>
+
+            <!-- Verify Email Process Modal -->
+            <div id="verify-process-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-indigo-500/50 p-8 text-center flex flex-col items-center">
+                    <div id="verify-spinner" class="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                    <div id="verify-icon" class="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-500 flex items-center justify-center mb-4 hidden">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div id="verify-error-icon" class="w-12 h-12 rounded-full bg-rose-500/20 text-rose-500 flex items-center justify-center mb-4 hidden">
+                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </div>
+                    <h3 id="verify-title" class="text-xl font-bold text-white mb-2">Memverifikasi Email...</h3>
+                    <p id="verify-desc" class="text-slate-400 text-sm">Mohon tunggu sebentar, kami sedang memvalidasi token Anda.</p>
+                    
+                    <!-- Back Button for result state -->
+                    <button id="verify-back-btn" class="mt-6 w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors hidden">Kembali ke Halaman Utama</button>
+                    <!-- Close button for error state -->
+                    <button id="verify-close-btn" class="mt-6 w-full py-2.5 rounded-xl bg-dark-700 text-white font-bold text-sm hover:bg-dark-600 transition-colors hidden">Tutup</button>
+                </div>
+            </div>
+
+            <!-- New Password Modal -->
+            <div id="new-password-modal" class="fixed inset-0 z-[300] flex items-center justify-center p-4 bg-slate-950/95 backdrop-blur-lg hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl border border-indigo-500/50 p-6 flex flex-col relative">
+                    <!-- Success View Container -->
+                    <div id="np-success-view" class="hidden flex-col items-center text-center">
+                        <div class="w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </div>
+                        <h3 class="text-xl font-bold text-white mb-2">Password Diubah!</h3>
+                        <p class="text-slate-400 text-sm mb-6">Password Anda berhasil diperbarui. Silakan login kembali.</p>
+                        <button id="np-back-btn" class="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors">Kembali ke Halaman Utama</button>
+                    </div>
+
+                    <!-- Form View -->
+                    <div id="np-form-view">
+                        <h3 class="text-xl font-bold text-white mb-1 text-center">Atur Password Baru</h3>
+                        <p class="text-slate-400 text-sm mb-6 text-center">Silakan masukkan password baru untuk akun Anda.</p>
+                        
+                        <form id="new-password-form" class="flex flex-col gap-3">
+                             <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD BARU</label>
+                                <input id="np-input" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">KONFIRMASI PASSWORD</label>
+                                <input id="np-confirm" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <button type="submit" id="np-submit-btn" class="mt-2 w-full py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">
+                                Simpan Password Baru
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Connection Error Modal -->
+            <div id="connection-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-rose-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4 animate-pulse">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                    </div>
+                    <h3 id="conn-modal-title" class="text-lg font-bold text-white mb-2">Koneksi Terputus</h3>
+                    <p id="conn-modal-desc" class="text-slate-400 text-sm mb-6">Terjadi kesalahan pada koneksi server.</p>
+                    <button id="conn-reload-btn" class="w-full py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-900/20 transition-colors">
+                        Muat Ulang
+                    </button>
+                    <!-- Loading Spinner for Retry -->
+                    <div id="conn-loading" class="hidden flex justify-center py-2">
+                        <div class="w-6 h-6 border-2 border-slate-500 border-t-white rounded-full animate-spin"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Success Modal -->
+            <div id="logout-success-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-emerald-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Berhasil Keluar</h3>
+                    <p class="text-slate-400 text-sm mb-6">Halaman akan dimuat ulang dalam <span id="logout-timer" class="font-bold text-emerald-400">3</span> detik.</p>
+                    <button id="logout-refresh-btn" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-sm hover:bg-emerald-700 shadow-lg shadow-emerald-900/20 transition-colors">
+                        Muat Ulang Sekarang
+                    </button>
+                </div>
+            </div>
+
+            <!-- Fullscreen Request Modal -->
+            <div id="fullscreen-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-indigo-900/50 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-12 h-12 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Mode Layar Penuh?</h3>
+                    <p class="text-slate-400 text-sm mb-6">Untuk pengalaman bermain yang lebih imersif, kami sarankan menggunakan mode layar penuh.</p>
+                    <div class="flex gap-3">
+                        <button id="fullscreen-deny-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Nanti</button>
+                        <button id="fullscreen-allow-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">Ya, Aktifkan</button>
+                    </div>
+                </div>
+            </div>
+
+             <!-- User Info Modal -->
+             <div id="user-info-modal" class="fixed inset-0 z-[115] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl border border-dark-700 animate-pop-in relative overflow-hidden flex flex-col">
+                    <button id="user-info-close-btn" class="absolute top-3 right-3 z-20 p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-full transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <div class="bg-gradient-to-br from-blue-700 to-indigo-800 px-6 py-6 text-center relative overflow-hidden shrink-0">
+                        <h2 class="text-xl font-bold text-white mb-1 relative z-10">Profil Saya</h2>
+                    </div>
+                    <div class="p-6 bg-dark-800 flex flex-col gap-4">
+                         <!-- Stats -->
+                         <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-dark-900/50 p-3 rounded-2xl border border-dark-700 text-center">
+                                <span class="block text-xs text-slate-400 font-bold uppercase mb-1">Score</span>
+                                <span id="info-score" class="block text-xl font-black text-amber-400">0</span>
+                            </div>
+                            <div class="bg-dark-900/50 p-3 rounded-2xl border border-dark-700 text-center">
+                                <span class="block text-xs text-slate-400 font-bold uppercase mb-1">Streak</span>
+                                <span id="info-streak" class="block text-xl font-black text-orange-500">0</span>
+                            </div>
+                         </div>
+                         
+                         <!-- Details -->
+                         <div class="space-y-4">
+                             <div>
+                                 <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Username</label>
+                                 <div class="flex items-center gap-2">
+                                     <div class="flex-1 bg-dark-900 px-4 py-2.5 rounded-xl border border-dark-700 text-slate-200 text-sm font-medium" id="info-username"></div>
+                                     <button id="edit-username-btn" class="p-2.5 bg-dark-700 hover:bg-dark-600 rounded-xl text-indigo-400 transition-colors">
+                                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                     </button>
+                                 </div>
+                             </div>
+                             <div>
+                                 <label class="block text-[10px] font-bold text-slate-500 mb-1 ml-1 uppercase">Email</label>
+                                 <div class="flex items-center gap-2">
+                                     <div class="flex-1 bg-dark-900 px-4 py-2.5 rounded-xl border border-dark-700 text-slate-200 text-sm font-medium truncate" id="info-email"></div>
+                                     <button id="edit-email-btn" class="p-2.5 bg-dark-700 hover:bg-dark-600 rounded-xl text-indigo-400 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>
+
+                         <!-- Reset Password -->
+                         <button id="reset-pass-init-btn" class="w-full py-3 rounded-xl border border-indigo-500/30 bg-indigo-900/10 text-indigo-300 font-bold text-sm hover:bg-indigo-900/30 transition-colors mt-2">
+                             Reset Password
+                         </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Generic Edit Modal -->
+            <div id="edit-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden flex flex-col">
+                    <div class="p-5 bg-dark-800">
+                        <h3 id="edit-modal-title" class="text-lg font-bold text-white mb-4">Edit Info</h3>
+                        <form id="edit-form" class="flex flex-col gap-3">
+                            <div>
+                                <label id="edit-label-input" class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">NEW VALUE</label>
+                                <input id="edit-input-value" type="text" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD</label>
+                                <input id="edit-input-password" type="password" maxlength="255" class="w-full px-4 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none">
+                            </div>
+                            <div class="flex gap-3 mt-2">
+                                <button type="button" id="edit-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Batal</button>
+                                <button type="submit" id="edit-save-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition-colors">Simpan</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reset Password Confirmation Modal -->
+             <div id="reset-confirm-modal" class="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-14 h-14 rounded-full bg-indigo-500/10 text-indigo-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Reset Password?</h3>
+                    <p class="text-slate-400 text-sm mb-6">Link reset password akan dikirim ke email: <br><span id="reset-email-target" class="text-indigo-400 font-bold"></span></p>
+                    <div class="flex gap-3">
+                        <button id="reset-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Batal</button>
+                        <button id="reset-confirm-send-btn" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">Kirim Link</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Auth Modal -->
+            <div id="auth-modal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-sm bg-dark-800 rounded-3xl shadow-2xl shadow-black/50 border border-dark-700 animate-pop-in relative overflow-hidden flex flex-col">
+                    <button id="auth-close-btn" class="absolute top-3 right-3 z-20 p-2 text-slate-400 hover:text-white bg-slate-800/50 hover:bg-slate-700 rounded-full transition-all">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                    </button>
+                    <!-- Header -->
+                    <div id="auth-header-bg" class="bg-gradient-to-br from-indigo-700 to-purple-800 px-6 py-6 text-center relative overflow-hidden shrink-0">
+                        <h1 class="text-2xl font-extrabold text-white mb-1 relative z-10 tracking-tight">Vocab Master</h1>
+                        <div class="relative h-5 w-full overflow-hidden">
+                            <p id="auth-subtitle-login" class="text-indigo-100 text-sm absolute w-full transition-all duration-500 ease-in-out transform translate-y-0 opacity-100">Welcome back!</p>
+                            <p id="auth-subtitle-register" class="text-indigo-100 text-sm absolute w-full transition-all duration-500 ease-in-out transform translate-y-8 opacity-0">Join us now!</p>
+                        </div>
+                    </div>
+                    <!-- Body -->
+                    <div class="p-5 bg-dark-800">
+                        <div id="auth-notification" class="mb-3 rounded-xl text-xs flex items-center gap-2 overflow-hidden transition-all duration-300 ease-in-out max-h-0 opacity-0 p-3 border">
+                            <div id="auth-notif-icon"></div>
+                            <span id="auth-notif-text" class="font-medium leading-tight"></span>
+                        </div>
+                        <form id="auth-form" class="flex flex-col gap-2">
+                            <div>
+                                <label id="label-username" class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">USERNAME / EMAIL</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                                    </div>
+                                    <input id="input-username" type="text" maxlength="255" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all invalid:border-rose-500" placeholder="user / email">
+                                </div>
+                            </div>
+
+                            <div id="container-email" class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0">
+                                <div class="pt-1">
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">EMAIL (OPSIONAL)</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                                        </div>
+                                        <input id="input-email" type="email" maxlength="31" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="contoh@email.com" tabindex="-1" disabled>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">PASSWORD</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                    </div>
+                                    <input id="input-password" type="password" maxlength="255" class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="••••••••">
+                                </div>
+                            </div>
+
+                            <div id="container-confirm-pass" class="transition-all duration-300 ease-in-out overflow-hidden max-h-0 opacity-0">
+                                <div class="pt-1">
+                                    <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">CONFIRM PASSWORD</label>
+                                    <div class="relative">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                                        </div>
+                                        <input id="input-confirm-password" type="password" maxlength="255" disabled class="w-full pl-9 pr-3 py-2.5 bg-dark-900 border border-dark-700 rounded-xl text-sm font-medium text-slate-200 focus:border-indigo-500 focus:outline-none transition-all" placeholder="••••••••" tabindex="-1">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <button id="auth-submit-btn" type="submit" class="mt-2 w-full py-2.5 rounded-xl font-bold text-sm tracking-wide transition-all transform active:scale-[0.98] flex justify-center items-center gap-2 min-h-[44px] bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-900/20">
+                                <span id="auth-btn-text" class="transition-all duration-300">LOG IN</span>
+                            </button>
+                        </form>
+                        <div class="mt-4 text-center">
+                            <p class="text-xs text-slate-400 font-medium">
+                                <span id="auth-switch-text">Belum punya akun? </span>
+                                <button id="auth-switch-btn" class="font-bold underline decoration-current/30 underline-offset-2 transition-colors text-blue-400 hover:text-blue-300">
+                                    Daftar Sekarang
+                                </button>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Modal -->
+            <div id="logout-modal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md fade-in hidden">
+                <div class="w-full max-w-xs bg-dark-800 rounded-2xl shadow-2xl border border-dark-700 animate-pop-in overflow-hidden p-6 text-center">
+                    <div class="mx-auto w-12 h-12 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Konfirmasi Logout</h3>
+                    <p class="text-slate-400 text-sm mb-6">Apakah Anda yakin ingin keluar dari akun?</p>
+                    <div class="flex gap-3">
+                        <button id="logout-cancel-btn" class="flex-1 py-2.5 rounded-xl border border-dark-700 text-slate-300 font-bold text-sm hover:bg-dark-700 transition-colors">Batal</button>
+                        <button id="logout-confirm-btn" class="flex-1 py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-900/20 transition-colors">Keluar</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- NAVBAR -->
+        <nav id="navbar" class="bg-dark-900/80 backdrop-blur-md border-b border-dark-700 sticky top-0 z-50 shadow-sm transition-colors duration-500">
+            <div class="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative">
+                <div id="navbar-logo-container" class="font-black text-xl tracking-tight shrink-0 flex items-center gap-1">
+                    <span id="logo-text-vocab" class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">Vocab</span>
+                    <span class="hidden sm:inline text-slate-200">Master</span>
+                </div>
+                
+                <!-- Mobile Tabs -->
+                <div class="flex bg-dark-800 border border-dark-700 p-1 rounded-xl mx-2 shrink-0 md:hidden">
+                    <button id="nav-btn-quiz" class="flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 
+                        <span class="hidden sm:inline">Play</span>
+                    </button>
+                    <button id="nav-btn-rank" class="flex items-center gap-2 px-4 md:px-6 py-2 rounded-lg font-bold text-xs md:text-sm transition-all duration-200 text-slate-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> 
+                        <span class="hidden sm:inline">Rank</span>
+                    </button>
+                </div>
+
+                <div id="navbar-user-section" class="flex items-center justify-end shrink-0 min-w-[40px]">
+                    <!-- Dynamically Injected -->
+                </div>
+            </div>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="flex-1 overflow-hidden relative flex flex-col md:flex-row p-4 gap-4 max-w-6xl mx-auto w-full">
+            
+            <!-- QUIZ COLUMN -->
+            <div id="quiz-col" class="flex-1 h-full flex flex-col block">
+                <!-- SKELETON LOADER -->
+                <div id="quiz-loader" class="w-full h-full flex items-center justify-center p-4 fade-in hidden">
+                    <div class="w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden h-full md:max-h-[85vh] border-2 border-dark-700 relative">
+                        <!-- Header -->
+                        <div class="bg-dark-900/50 border-b border-dark-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 animate-pulse">
+                            <!-- Streak Placeholder (Left) -->
+                             <div class="h-8 w-16 bg-dark-700 rounded-full"></div>
+                            <!-- Score Placeholder (Right) -->
+                             <div class="h-8 w-20 bg-dark-700 rounded-full"></div>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="flex-1 flex flex-col justify-center px-6 py-6 gap-6 animate-pulse">
+                            <!-- Question -->
+                            <div class="flex flex-col items-center gap-3 w-full">
+                                <div class="h-4 w-32 bg-dark-700 rounded-full"></div> <!-- Label "Apa arti..." -->
+                                <div class="h-10 w-3/4 bg-dark-700 rounded-lg"></div> <!-- Vocab word -->
+                            </div>
+                            <!-- Choices -->
+                            <div class="flex flex-col gap-3 w-full">
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Retry Overlay -->
+                        <div id="retry-overlay" class="absolute inset-0 bg-dark-900/60 backdrop-blur-[2px] flex items-center justify-center z-20 hidden">
+                             <button id="retry-btn" class="px-6 py-3 bg-dark-700 border border-dark-600 text-slate-200 rounded-xl font-bold hover:bg-dark-600 hover:text-white transition-all shadow-xl flex items-center gap-2 pointer-events-auto">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M3 21v-5h5"/></svg>
+                                Gagal memuat, Coba Lagi
+                             </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="quiz-container" class="w-full h-full flex items-center justify-center p-4 fade-in opacity-100 scale-100 transition-all duration-500 ease-out hidden">
+                    <div id="quiz-card" class="w-full max-w-lg bg-dark-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col overflow-hidden h-full md:max-h-[85vh] border-2 transition-all duration-500 relative border-dark-700">
+                        <div class="bg-dark-900/50 border-b border-dark-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10">
+                            <!-- FIXED: Streak Left, Score Right -->
+                            <div class="flex-1 flex justify-start" id="streak-badge-container">
+                                <!-- Streak badge injected here -->
+                            </div>
+                            <div id="score-container" class="bg-amber-900/30 border border-amber-700/50 px-4 py-1.5 rounded-full shadow-sm flex items-center gap-2 transition-transform duration-300">
+                                <span class="text-[10px] font-bold text-amber-500 uppercase leading-none mt-[1px]">Score</span>
+                                <span id="score-display" class="text-base font-extrabold text-amber-400 leading-none transition-colors">0</span>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10">
+                            <div class="px-6 py-6 text-center">
+                                <h2 class="text-slate-400 text-xs font-bold uppercase tracking-wide mb-2">Apa arti kata:</h2>
+                                <h1 id="question-vocab" class="text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white"></h1>
+                            </div>
+                            <div class="px-6 pb-6">
+                                <div id="choices-container" class="flex flex-col gap-3">
+                                    <!-- Choices injected here -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="h-4 bg-dark-800/0"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LEADERBOARD COLUMN -->
+            <div id="leaderboard-col" class="w-full md:w-[350px] lg:w-[400px] h-full flex flex-col hidden md:flex">
+                <div class="w-full max-w-2xl mx-auto p-4 flex flex-col h-full fade-in pb-10">
+                    <!-- NEW: Mobile User Info Toggle Button -->
+                    <div class="md:hidden mb-3">
+                        <button id="mobile-user-info-btn" class="w-full py-3 bg-dark-800 border border-dark-700 rounded-xl text-slate-300 font-bold text-sm flex items-center justify-center gap-2 hover:bg-dark-700 transition-colors shadow-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                            Informasi User
+                        </button>
+                    </div>
+
+                    <!-- FIXED: Removed h-[75vh], added flex-1 -->
+                    <div id="leaderboard-card" class="bg-dark-800 rounded-3xl shadow-xl shadow-black/20 overflow-hidden border border-dark-700 flex-1 min-h-0 flex flex-col relative mb-4 transition-all duration-1000">
+                        <div id="leaderboard-header" class="bg-gradient-to-r from-indigo-800 to-purple-900 p-4 relative flex items-center justify-center text-white shrink-0 shadow-lg z-20 border-b border-white/10 transition-all duration-1000">
+                            <h2 class="text-xl md:text-2xl font-black flex items-center gap-2 tracking-wide drop-shadow-md">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> 
+                                LEADERBOARD
+                            </h2>
+                        </div>
+                        
+                        <!-- FIXED: Combined Table with Sticky Header -->
+                        <div class="flex-1 overflow-y-auto custom-scrollbar p-0 bg-dark-800 relative">
+                            <table class="w-full border-collapse table-fixed">
+                                <thead class="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-wider bg-dark-900/95 backdrop-blur sticky top-0 z-10 shadow-sm border-b border-dark-700">
+                                    <tr>
+                                        <th class="px-2 py-3 text-center w-[15%]">#</th>
+                                        <th class="px-4 py-3 text-left w-[55%]">Player</th>
+                                        <th class="px-4 py-3 text-right w-[30%]">Pts</th>
+                                        <!-- Add Streak Column -->
+                                        <th class="px-2 py-3 text-center w-[15%]">🔥</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboard-body" class="text-sm md:text-base">
+                                    <!-- Rows injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div id="current-user-rank-row" class="border-t shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] px-0 transition-colors duration-1000 bg-amber-900/20 border-amber-900/30 hidden">
+                             <!-- My Rank injected here -->
+                        </div>
+                    </div>
+                    <button id="refresh-lb-btn" class="w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base bg-dark-800 border border-dark-700 text-indigo-400 hover:bg-dark-700 hover:border-indigo-500/50 hover:shadow-lg active:scale-[0.98] shrink-0">
+                        Refresh Leaderboard
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- TEMPLATES -->
+    
+    <!-- Choice Button Template -->
+    <template id="template-choice-btn">
+        <button class="w-full py-3.5 px-5 rounded-2xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center min-h-[52px] text-center bg-dark-900 text-slate-300 hover:bg-dark-700 hover:text-white border-2 border-dark-700 shadow-sm overflow-hidden relative group">
+            <span class="relative z-10 break-words w-full"></span>
+        </button>
+    </template>
+
+    <!-- Leaderboard Row Template -->
+    <template id="template-lb-row">
+        <tr class="border-b border-dark-700 last:border-0 hover:bg-dark-700 transition-colors">
+            <td class="px-2 py-3.5 font-bold w-[15%] text-center text-slate-500 rank-cell"></td>
+            <td class="px-4 py-3.5 font-semibold w-[55%] text-slate-300"><div class="truncate w-full username-cell"></div></td>
+            <td class="px-4 py-3.5 text-right font-mono font-bold text-indigo-400 w-[30%] score-cell"></td>
+            <td class="px-2 py-3.5 font-bold w-[15%] text-center text-orange-500 streak-cell"></td>
+        </tr>
+    </template>
+    
+    <script src="./main.js"></script>
+</body>
+</html>
