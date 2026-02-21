@@ -1,8 +1,8 @@
 import Joi from 'joi'
 
 
-const username = Joi.string().trim().max(15).pattern(/^[a-zA-Z0-9]+$/).required()
-export const password = Joi.string().trim().max(255).required()
+const username = Joi.string().trim().min(3).max(15).pattern(/^[a-zA-Z0-9]+$/).required()
+export const password = Joi.string().trim().min(6).max(255).required()
 const email = Joi.string().email().trim().max(31)
 const emailRequired = Joi.string().email().trim().max(31).required()
 

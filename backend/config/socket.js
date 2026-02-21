@@ -72,7 +72,7 @@ export function setupSocket(server) {
         }
   
   
-        const raw = await redis.lIndex(`vocab:questions:${socket.user}`, data.currentIndex)
+        const raw = await redis.lIndex(redisHelper.redisKey("questions", socket.user), data.currentIndex)
         let newQuestion = raw? JSON.parse(raw) : null
         if(!newQuestion){
           const firstQuestion = await setNewBatch(socket.user, data.streak)
@@ -103,8 +103,9 @@ export function setupSocket(server) {
         if(!ok){return socketDC(socket, WARN_CODE.SESSION_EXPIRED, "sesi habis, membuatkan sesi baru...")}
         
         if(data.currentIndex >= totalQuestion){return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "pertanyaan tidak sinkron, membuatkan pertanyaan baru...")}
-        const raw = await redis.lIndex(`vocab:questions:${socket.user}`, data.currentIndex)
+        const raw = await redis.lIndex(redisHelper.redisKey("questions", socket.user), data.currentIndex)
         const question = raw? JSON.parse(raw) : null
+        if (!question) { return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "pertanyaan tidak sinkron, membuatkan pertanyaan baru...")}
 
         const correctAnswer = question.choices[question.answerIndex]
         const isCorrect = correctAnswer === answer
@@ -125,9 +126,6 @@ export function setupSocket(server) {
         const changedRows = await updateUser({username: socket.user, increment, streak: data.streak})
         if(!changedRows){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
 
-        const broadcastResponse = {username: socket.user, score: increment, streak: data.streak}
-        socket.broadcast.emit("leaderboard-update", broadcastResponse)
-
         data.currentIndex++
         const {ok:ok2} = await redisHelper.set("quiz", socket.user, data)
         if(!ok2){return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "gagal menyimpan data baru")}
@@ -147,10 +145,10 @@ export function setupSocket(server) {
       const {ok, data} = await redisHelper.get("socket", socket.user)
       if(ok && data === socket.id) {
         await redisHelper.del("socket", socket.user)
+        await redisHelper.del("quiz", socket.user)
+        await redisHelper.del("questions", socket.user)
       }
       
-      await redisHelper.del("quiz", socket.user)
-      await redisHelper.del("questions", socket.user)
     })
   })
 }
@@ -190,6 +188,7 @@ async function setNewBatch(username, streak) {
   const strings = questions.map(q => JSON.stringify(q))
   const isSuccess = await redis.rPush(redisHelper.redisKey("questions", username), strings)
   if(!isSuccess){return null}
+  await redis.expire(redisHelper.redisKey("questions", username), redisHelper.getTTL("questions"));
   
   const quizData = {
     currentIndex: 0,

@@ -20,7 +20,7 @@ export async function authenticateUser(type, identifier, password) {
     const matchPassword = await bcrypt.compare(password, user.password)
     if(!matchPassword){return null}
 
-    const {oassword, ...safeUser} = user
+    const {password: _password, ...safeUser} = user
 
     return safeUser
 }
@@ -88,7 +88,7 @@ export async function setEmail({id, email}) {
     try {
         const [{changedRows}] = await db.query("UPDATE users SET email = ? WHERE id = ?", [email, id])
         return changedRows
-    }catch(error){
+    }catch(err){
         if (err.code === 'ER_DUP_ENTRY') throw new Error('duplicate')
         throw err
     }

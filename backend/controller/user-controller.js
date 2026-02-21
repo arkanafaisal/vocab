@@ -25,8 +25,9 @@ userController.resetPassword = async (req, res) => {
         if(!ok){return response(res, false, "tolong coba lagi")}
         
         await redis.incrBy(`vocab:rl:reset-password:${req.ip}`, 5)
+        await redis.expire(`vocab:rl:reset-password:${req.ip}`, 15 * 60)
 
-        sendMail.resetPassword({email, token})
+        await sendMail.resetPassword({email, token})
         return response(res, false, "link reset password berhasil terkirim")
     }catch(err){
         console.log(err)
@@ -49,6 +50,8 @@ userController.verifyResetPassword = async (req, res) => {
         if(!changedRows){return response(res, false, "user tidak ditemukan")}
 
         await redis.incrBy(`vocab:rl:verify-reset-password:${req.ip}`, 5)
+        await redis.expire(`vocab:rl:verify-reset-password:${req.ip}`, 30 * 60)
+
         return response(res, true, "password berhasil diubah")
     }catch(err){
         console.log(err)
@@ -63,7 +66,7 @@ userController.verifyEmail = async (req, res) => {
     if(!ok){return response(res, false, "link invalid")}
 
     const {ok: ok2, data} = await redisHelper.get("update-email", token)
-    if(!ok){return response(res, false, "link expired")}
+    if(!ok2){return response(res, false, "link expired")}
     await redisHelper.del("update-email", token)
 
     try {
@@ -71,6 +74,8 @@ userController.verifyEmail = async (req, res) => {
         if(!changedRows){return response(res, false, "akun tidak ditemukan")}
 
         await redis.incrBy(`vocab:rl:verify-email:${req.ip}`, 5)
+        await redis.expire(`vocab:rl:verify-email:${req.ip}`, 30 * 60)
+
         return response(res, true, "verifikasi berhasil")
     }catch(err) {
         if(err.message === "duplicate"){return response(res, false, "email sudah digunakan")}
@@ -99,8 +104,12 @@ userController.updateUsername = async (req, res) => {
             await forceDisconnect(socketId)
             await redisHelper.del("socket", user.username)
         }
-
+        
+        await redisHelper.del("quiz", user.username);
+        await redisHelper.del("questions", user.username);
         await redis.incrBy(`vocab:rl:update-username:${req.ip}`, 5)
+        await redis.expire(`vocab:rl:update-username:${req.ip}`, 15 * 60)
+
 
         return response(res, true, "username berhasil dirubah")
 
@@ -131,8 +140,9 @@ userController.updateEmail = async (req, res) => {
         const {ok: ok2} = await redisHelper.set("update-email", token, {email: newEmail, id: req.user.id})
         if(!ok2){return response(res, false, "tolong coba lagi")}
         
-        sendMail.verifyEmail({newEmail, token})
+        await sendMail.verifyEmail({newEmail, token})
         await redis.incrBy(`vocab:rl:update-email:${req.ip}`, 10)
+        await redis.expire(`vocab:rl:update-email:${req.ip}`, 30 * 60)
 
         return response(res, true, "link verifikasi berhasil terkirim")
     } catch(err) {

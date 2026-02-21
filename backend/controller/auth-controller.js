@@ -40,6 +40,7 @@ authController.register = async (req, res) => {
         if(!insertedId){return response(res, false, "could not register user")}
 
         await redis.incrBy(`vocab:rl:register:${req.ip}`, 15)
+        await redis.expire(`vocab:rl:register:${req.ip}`, 10 * 60)
         return response(res, true, "user registered")
 
 
@@ -85,7 +86,12 @@ authController.login = async (req, res) => {
             await redisHelper.del("socket", user.username)
         }
         
+        await redisHelper.del("socket", user.username)
+        await redisHelper.del("quiz", user.username);
+        await redisHelper.del("questions", user.username);
+        
         await redis.incrBy(`vocab:rl:login:${req.ip}`, 5)
+        await redis.expire(`vocab:rl:login:${req.ip}`, 2 * 60)
         return response(res, true, "login successfull", user)
 
 
