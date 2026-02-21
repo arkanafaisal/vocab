@@ -9,6 +9,7 @@ import * as userSchema from "../schema/user-schema.js";
 import { response } from '../utils/response.js'
 import { validate } from "../utils/validate.js";
 import { sendMail } from "../utils/mailer.js"
+import redis from '../config/redis.js';
 
 
 
@@ -20,9 +21,11 @@ userController.resetPassword = async (req, res) => {
         if(!email){return response(res, false, "kamu belum mendaftarkan email")}
 
         const token = randomUUID()
-        const {ok} = await redisHelper.set("reset-password", token, {id: req.user.id})
+        const {ok} = await redisHelper.set("reset-password", token, req.user.id)
         if(!ok){return response(res, false, "tolong coba lagi")}
-        //max limit
+        
+        await redis.incrBy(`vocab:rl:reset-password:${req.ip}`, 5)
+
         sendMail.resetPassword({email, token})
         return response(res, false, "link reset password berhasil terkirim")
     }catch(err){
@@ -38,13 +41,14 @@ userController.verifyResetPassword = async (req, res) => {
     if(!ok2){return response(res, false, message2)}
 
     try {
-        console.log(token)
         const {ok: ok3, data: id} = await redisHelper.get("reset-password", token)
         if(!ok3){return response(res, false, "link invalid atau expired")}
         await redisHelper.del("reset-password", token)
 
         const changedRows = await UserModel.setPassword({id, password})
         if(!changedRows){return response(res, false, "user tidak ditemukan")}
+
+        await redis.incrBy(`vocab:rl:verify-reset-password:${req.ip}`, 5)
         return response(res, true, "password berhasil diubah")
     }catch(err){
         console.log(err)
@@ -65,6 +69,8 @@ userController.verifyEmail = async (req, res) => {
     try {
         const changedRows = await UserModel.setEmail(data)
         if(!changedRows){return response(res, false, "akun tidak ditemukan")}
+
+        await redis.incrBy(`vocab:rl:verify-email:${req.ip}`, 5)
         return response(res, true, "verifikasi berhasil")
     }catch(err) {
         if(err.message === "duplicate"){return response(res, false, "email sudah digunakan")}
@@ -75,11 +81,10 @@ userController.verifyEmail = async (req, res) => {
 userController.updateUsername = async (req, res) => {
     const {ok, value: {newUsername, password}, message} = validate(userSchema.updateUsername, req.body)
     if(!ok){return response(res, false, message)}
-    console.log(newUsername)
 
     try {
         const user = await UserModel.getUserForUsernameChange({id: req.user.id})
-        if(!user){return response(res, false, "user tidak ditemukan", null, 401)}
+        if(!user){return response(res, false, "user tidak ditemukan", null, 403)}
         if(user.username === newUsername){return response(res, false, "username tidak boleh sama dengan yang lama")}
         
         
@@ -87,13 +92,15 @@ userController.updateUsername = async (req, res) => {
         if(!matchPassword){return response(res, false, "password salah")}
         
         const changedRows = await UserModel.setUsername({id: req.user.id, username: newUsername})
-        if(!changedRows){return response(res, false, "user tidak ditemukan", null, 401)}
+        if(!changedRows){return response(res, false, "user tidak ditemukan", null, 403)}
 
         const {ok:ok3, data: socketId} = await redisHelper.get("socket", user.username)
         if(ok3){
             await forceDisconnect(socketId)
             await redisHelper.del("socket", user.username)
         }
+
+        await redis.incrBy(`vocab:rl:update-username:${req.ip}`, 5)
 
         return response(res, true, "username berhasil dirubah")
 
@@ -111,7 +118,7 @@ userController.updateEmail = async (req, res) => {
 
     try {
         const user = await UserModel.getUserForEmailChange({id: req.user.id})
-        if(!user){return response(res, false, "user tidak ditemukan", null, 401)}
+        if(!user){return response(res, false, "user tidak ditemukan", null, 403)}
         
         const matchPassword = await bcrypt.compare(password, user.password)
         if(!matchPassword){return response(res, false, "password salah")}
@@ -123,9 +130,10 @@ userController.updateEmail = async (req, res) => {
 
         const {ok: ok2} = await redisHelper.set("update-email", token, {email: newEmail, id: req.user.id})
         if(!ok2){return response(res, false, "tolong coba lagi")}
-        //max ratelimit
         
         sendMail.verifyEmail({newEmail, token})
+        await redis.incrBy(`vocab:rl:update-email:${req.ip}`, 10)
+
         return response(res, true, "link verifikasi berhasil terkirim")
     } catch(err) {
         console.log(err)

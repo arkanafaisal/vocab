@@ -451,7 +451,7 @@
                         </div>
                         
                         <!-- Content -->
-                        <div class="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center px-6 py-6 gap-6 animate-pulse min-h-0">
+                        <div class="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center px-6 py-6 gap-6 animate-pulse min-h-0 rounded-b-[22px]">
                             <!-- Question -->
                             <div class="flex flex-col items-center gap-3 w-full">
                                 <div class="h-4 w-32 bg-dark-700 rounded-full"></div> 
@@ -459,6 +459,7 @@
                             </div>
                             <!-- Choices -->
                             <div class="flex flex-col gap-3 w-full">
+                                <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
                                 <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
                                 <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
                                 <div class="h-[52px] w-full bg-dark-800 border-2 border-dark-700 rounded-2xl"></div>
@@ -493,7 +494,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10 min-h-0">
+                        <div class="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10 min-h-0 rounded-b-[22px]">
                             <div class="px-6 py-6 text-center">
                                 <h2 class="text-slate-400 text-xs font-bold uppercase tracking-wide mb-2">Apa arti kata:</h2>
                                 <h1 id="question-vocab" class="text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white"></h1>
@@ -504,7 +505,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="h-4 bg-transparent shrink-0 rounded-b-[22px]"></div>
                     </div>
                 </div>
             </div>
@@ -752,20 +752,21 @@
                 if (body) options.body = JSON.stringify(body);
 
                 let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
-
+                
+                // Pesan error manual untuk 429 dan 500 (tanpa parsing JSON)
                 if (response.status === 429) {
-                    showToast("Terlalu banyak permintaan, coba lagi nanti.", 'error');
-                    return { success: false, message: "Too Many Requests" };
+                    return { success: false, message: "limit tercapai, coba lagi nanti" };
                 }
-
                 if (response.status === 500) {
-                    showToast("Terjadi kesalahan server (500)", 'error');
-                    return { success: false, message: "Server Error" };
+                    return { success: false, message: "server error, harap hubungi admin" };
                 }
 
-                if ((response.status === 401 || response.status === 403) && !isRetry) {
+                // Parsing JSON untuk status selain 429 dan 500 (termasuk 403, 401, dll)
+                let responseData = await response.json();
+
+                if (response.status === 401 && !isRetry) {
                     if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
-                        return await response.json(); 
+                        return responseData; 
                     }
 
                     const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
@@ -777,12 +778,18 @@
                         if (socketService) socketService.disconnect();
                         renderHeader(); 
                         openAuthModal();
-                        showToast("Sesi habis, silakan login kembali", 'error');
-                        return { success: false, message: "Session expired" };
+                        showToast(responseData.message, 'error');
+                        return responseData;
                     }
                 }
 
-                return await response.json();
+                // Tampilkan pesan untuk error 403
+                if (response.status === 403) {
+                    showToast(responseData.message, 'error');
+                    return responseData;
+                }
+
+                return responseData;
 
             } catch (err) {
                 console.error(`API Error (${endpoint}):`, err);
@@ -1105,10 +1112,10 @@
                     }
                 } else {
                     toggleAuthMode();
-                    showToast("Registrasi sukses. Silakan login.", 'success');
+                    showToast(res.message, 'success');
                 }
             } else {
-                showToast(res.message || "Gagal.", 'error');
+                showToast(res.message, 'error');
             }
         }
 
@@ -1184,15 +1191,15 @@
                 if(res.success) {
                     editModal.classList.add('hidden');
                     userInfoModal.classList.add('hidden');
-                    showConnectionModal("Username Diubah", res.message || "Username berhasil diperbarui. Silakan muat ulang.", true);
+                    showConnectionModal("Username Diubah", res.message, true);
                 } else {
-                    editMessage.textContent = res.message || "Gagal memperbarui username";
-                    editMessage.className = "text-rose-400 text-xs text-center mb-3 block";
+                    editMessage.textContent = res.message;
+                    editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
                 }
             } else {
                 res = await api.updateEmail(newVal, pass);
-                editMessage.textContent = res.message || (res.success ? "Link terkirim!" : "Gagal mengirim link");
-                editMessage.className = res.success ? "text-emerald-400 text-xs text-center mb-3 block" : "text-rose-400 text-xs text-center mb-3 block";
+                editMessage.textContent = res.message;
+                editMessage.className = res.success ? "text-emerald-400 text-xs text-left mb-3 block" : "text-rose-400 text-xs text-left mb-3 block";
                 // Don't close modal on success immediately so user can read message
             }
         }
@@ -1355,12 +1362,12 @@
                     
                     if (res.success) {
                         verifyTitle.textContent = "Verifikasi Berhasil!";
-                        verifyDesc.textContent = res.message || "Email Anda telah berhasil diverifikasi.";
+                        verifyDesc.textContent = res.message;
                         verifyIcon.classList.remove('hidden');
                         verifyBackBtn.classList.remove('hidden'); 
                     } else {
                          verifyTitle.textContent = "Verifikasi Gagal";
-                         verifyDesc.textContent = res.message || "Token tidak valid atau kedaluwarsa.";
+                         verifyDesc.textContent = res.message;
                          verifyErrorIcon.classList.remove('hidden');
                          verifyBackBtn.classList.remove('hidden'); 
                     }
@@ -1406,56 +1413,25 @@
                              npSuccessView.classList.remove('hidden');
                              npSuccessView.classList.add('flex');
                          } else {
-                             npMessage.textContent = res.message || "Gagal mengubah password";
+                             npMessage.textContent = res.message;
                              npMessage.className = "block text-left mb-3 text-rose-400 text-sm";
                          }
                      };
+                } else if (token) {
+                     newPasswordModal.classList.remove('hidden');
+                     npFormView.classList.add('hidden');
+                     const npErrorView = document.getElementById('np-error-view');
+                     if(npErrorView) {
+                         npErrorView.classList.remove('hidden');
+                         npErrorView.classList.add('flex');
+                         document.getElementById('np-error-desc').textContent = "Format token tidak valid.";
+                         document.getElementById('np-error-back-btn').onclick = () => {
+                             newPasswordModal.classList.add('hidden');
+                             window.history.replaceState(null, null, ' ');
+                             startMainApp();
+                         }
+                     }
                 }
-            }
-        }
-        async function handleEditSubmit(e) {
-            e.preventDefault();
-            const newVal = editInputValue.value.trim();
-            const pass = editInputPassword.value;
-            
-            if(!newVal || !pass) {
-                editMessage.textContent = "Semua field wajib diisi";
-                editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
-                return;
-            }
-            
-            if (currentEditMode === 'username' && !isValidUsername(newVal)) {
-                editMessage.textContent = "Username tidak valid";
-                editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
-                return;
-            }
-            if (currentEditMode === 'email' && !isValidEmail(newVal)) {
-                editMessage.textContent = "Email tidak valid (maks 31 char)";
-                editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
-                return;
-            }
-            if (!isValidPassword(pass)) {
-                editMessage.textContent = "Password minimal 6 karakter";
-                editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
-                return;
-            }
-
-            let res;
-            if(currentEditMode === 'username') {
-                res = await api.updateUsername(newVal, pass);
-                if(res.success) {
-                    editModal.classList.add('hidden');
-                    userInfoModal.classList.add('hidden');
-                    showConnectionModal("Username Diubah", res.message || "Username berhasil diperbarui. Silakan muat ulang.", true);
-                } else {
-                    editMessage.textContent = res.message || "Gagal memperbarui username";
-                    editMessage.className = "text-rose-400 text-xs text-left mb-3 block";
-                }
-            } else {
-                res = await api.updateEmail(newVal, pass);
-                editMessage.textContent = res.message || (res.success ? "Link terkirim!" : "Gagal mengirim link");
-                editMessage.className = res.success ? "text-emerald-400 text-xs text-left mb-3 block" : "text-rose-400 text-xs text-left mb-3 block";
-                // Don't close modal on success immediately so user can read message
             }
         }
         
@@ -1983,9 +1959,9 @@
             
             if (res.success) {
                 resetConfirmModal.classList.add('hidden');
-                showToast(res.message || "Link reset password dikirim.", 'success');
+                showToast(res.message, 'success');
             } else {
-                showToast(res.message || "Gagal mengirim link.", 'error');
+                showToast(res.message, 'error');
             }
         });
         

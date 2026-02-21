@@ -1,6 +1,5 @@
 import express from 'express'
 
-import verifyJwt from '../middleware/jwtVerify.js'
 import rateLimiting from '../middleware/rateLimiting.js'
 
 import dataController from '../controller/data-controller.js'

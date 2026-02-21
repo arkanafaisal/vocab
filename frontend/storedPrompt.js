@@ -57,14 +57,9 @@ soalnya ini sudah saya retry beberapa kali promptnya, tetap saja ada yang error,
 
 /*
 
-tolong modal reset-password (saat memilih kirim link atau batal) itu ketika open modalnya sama seperti yang update email maupun username, bukan close profile lalu membuka modalnya (terlihat jelek ada kedipnya dulu), saat menutup juga, bukannya langsung profil malah terlihat leaderboardnya dulu baru terbuka profilnya 
+juga tolong bedakan ya sekarang, 40101 itu ketika accessToken user sudah expired (tapi punya refreshtoken) juga 40102 itu ketika user benar benar terdeteksi baru (refreshtoken dan accesstoken tidak ada)
 
 
-tolong animasi streak pada leaderboard itu sinkron dengan yang quiz ya, jadi state user saat itu bukan harus refresh dulu baru berubah ui streaknya
-
-
-
-cuma itu yang height quiz cardnya, kenapa dalamnya (jawaban) itu masih muncul scrollbar walaupun height pc normal? saya belum tes kalau versi mobile sih, tolong jangan ketinggian atau melebihi parent di height normal sehingga tidak muncul scrollbar
 
 
 

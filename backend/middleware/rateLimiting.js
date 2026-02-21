@@ -8,7 +8,7 @@ export default function rateLimiting(feature, windowM, limit){
 
         if (count === 1) {await redis.pExpire(key, (windowM * 60000))}
 
-        if (count > limit) {return response(res, false, "too many requests", null, 429)}
+        if (count > limit) {return response(res, false, "limit tercapai, coba lagi nanti", null, 429)}
 
         next()
     }

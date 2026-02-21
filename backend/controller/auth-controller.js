@@ -38,7 +38,8 @@ authController.register = async (req, res) => {
     try {
         const insertedId = await UserModel.insertUser(value)
         if(!insertedId){return response(res, false, "could not register user")}
-        
+
+        await redis.incrBy(`vocab:rl:register:${req.ip}`, 15)
         return response(res, true, "user registered")
 
 
@@ -83,6 +84,8 @@ authController.login = async (req, res) => {
             await forceDisconnect(socketId)
             await redisHelper.del("socket", user.username)
         }
+        
+        await redis.incrBy(`vocab:rl:login:${req.ip}`, 10)
         return response(res, true, "login successfull", user)
 
 
@@ -114,7 +117,7 @@ authController.logout = async (req, res) => {
 
 authController.refreshToken = async (req, res) => {
     const oldToken = req.cookies.refreshToken
-    if(!oldToken) return response(res, false, 'refresh token invalid', null, 401)
+    if(!oldToken) return response(res, false, 'selamat datang', null, 403)
         
         
     try {
@@ -133,7 +136,7 @@ authController.refreshToken = async (req, res) => {
             })
     
     
-        if(!id) return response(res, false, 'refresh token invalid', null, 401)
+        if(!id) return response(res, false, 'silakan login kembali', null, 403)
 
         
         const isExist = await UserModel.verifyUserById({id})
@@ -156,8 +159,8 @@ authController.refreshToken = async (req, res) => {
 
     } catch(err){
         console.log(err)
-        if(err.name === "TokenExpiredError"){return response(res, false, "refresh token expired", null, 401)}
-        if(err.name === "JsonWebTokenError"){return response(res, false, "refresh token invalid", null, 401)}
+        if(err.name === "TokenExpiredError"){return response(res, false, "refresh token expired", null, 403)}
+        if(err.name === "JsonWebTokenError"){return response(res, false, "refresh token invalid", null, 403)}
         return response(res, false, "server error", null, 500)
     }
 }

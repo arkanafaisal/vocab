@@ -5,7 +5,11 @@ import { response } from '../utils/response.js'
 function verifyJwt(req, res, next){
     const token = req.cookies.accessToken
 
-    if(!token){return response(res, false, "token invalid", null, 401)}
+    if(!token){
+        const refreshToken = req.cookies.refreshToken
+        if(refreshToken){return response(res, false, "token expired", null, 401)}
+        return response(res, false, "selamat datang", null, 403)
+    }
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRETKEY)
