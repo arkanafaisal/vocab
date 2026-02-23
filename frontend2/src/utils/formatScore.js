@@ -1,0 +1,1 @@
+export const formatScore = (num) => num >= 1000 ? (num / 1000).toFixed(1) + 'K' : num.toLocaleString();

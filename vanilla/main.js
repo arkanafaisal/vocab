@@ -1469,3 +1469,4 @@ async function startMainApp() {
         startMainApp();
     }
 })();
+
