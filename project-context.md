@@ -2,7 +2,7 @@
 
 ## Tech Stack Overview
 - **Core**: Node.js, Express v5
-- **Database & Caching**: MongoDB, MySQL2, Redis
+- **Database & Caching**: MySQL2, Redis
 - **Real-time Communication**: Socket.io
 - **Authentication & Security**: JSON Web Token (JWT), bcrypt, cookie-parser, cors
 - **Validation**: Joi
