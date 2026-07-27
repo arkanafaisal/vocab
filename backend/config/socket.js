@@ -31,35 +31,35 @@ let io = null
 export function setupSocket(server) {
   io = new Server(server)
 
-  io.on("connection", async (socket) => {
-    const cookies = socket.request.headers.cookie || ''
-    const parsed = cookie.parse(cookies)
-    if(!parsed.accessToken){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "tunggu sebentar...")}
-    
-    try {
-      const {id} = jwt.verify(parsed.accessToken, process.env.JWT_SECRETKEY)
-      const user = await getMyData({id})
+  io.on("connection", (socket) => {
+    socket.initPromise = (async () => {
+      const cookies = socket.request.headers.cookie || ''
+      const parsed = cookie.parse(cookies)
+      if(!parsed.accessToken){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "tunggu sebentar...")}
       
-      if(!user){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
-      socket.user = user.username
-      
-      const ok = await redis.set(redisHelper.redisKey("socket", user.username), JSON.stringify(socket.id), {NX: true, EX: redisHelper.getTTL("socket")} )
-      if(!ok){return socketDC(socket, WARN_CODE.ACCOUNT_CONFLICT, "ada perangkat lain yang menggunakan akunmu")}
-      
-      const {ok: ok2, data} = await redisHelper.get("quiz", socket.user)
-      if(!ok2 || data.currentIndex >= totalQuestion){
-        const isSuccess = await setNewBatch(socket.user, user.streak)
-        if(!isSuccess){return socketDC(socket, WARN_CODE.TEMP_FAILURE, "gagal membuat pertanyaan baru, mencoba ulang...")}
+      try {
+        const {id} = jwt.verify(parsed.accessToken, process.env.JWT_SECRETKEY)
+        const user = await getMyData({id})
+        
+        if(!user){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
+        socket.user = user.username
+        
+        const ok = await redis.set(redisHelper.redisKey("socket", user.username), JSON.stringify(socket.id), {NX: true, EX: redisHelper.getTTL("socket")} )
+        if(!ok){return socketDC(socket, WARN_CODE.ACCOUNT_CONFLICT, "ada perangkat lain yang menggunakan akunmu")}
+        
+        const {ok: ok2, data} = await redisHelper.get("quiz", socket.user)
+        if(!ok2 || data.currentIndex >= totalQuestion){
+          const isSuccess = await setNewBatch(socket.user, user.streak)
+          if(!isSuccess){return socketDC(socket, WARN_CODE.TEMP_FAILURE, "gagal membuat pertanyaan baru, mencoba ulang...")}
+        }
+      } catch(err) {
+        console.error("Socket init auth error:", err.message)
+        return socketDC(socket, WARN_CODE.SERVER_ERROR, "server error, tolong coba lagi")
       }
-    } catch(err) {
-      console.log(err)
-      return socketDC(socket, WARN_CODE.SERVER_ERROR, "server error, tolong coba lagi")
-    }
-    
-
-
+    })();
 
     socket.on("request_question", async ()=>{
+      if(socket.initPromise){await socket.initPromise}
       if(!socket.user){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "sesi habis, tolong refresh halaman")}
 
       const isLocked = await redisHelper.isLocked("request_question", socket.user)
@@ -71,7 +71,6 @@ export function setupSocket(server) {
           return socketDC(socket, WARN_CODE.SESSION_EXPIRED, "sesi habis, membuatkan sesi baru...")
         }
   
-  
         const raw = await redis.lIndex(redisHelper.redisKey("questions", socket.user), data.currentIndex)
         let newQuestion = raw? JSON.parse(raw) : null
         if(!newQuestion){
@@ -82,18 +81,17 @@ export function setupSocket(server) {
         } else {
           const {answerIndex, ...safeQuestion} = newQuestion
           socket.emit("new_question", safeQuestion)
-
         }
         
       } catch(err) {
-        console.log(err)
+        console.error("Error request_question:", err.message)
         return socketDC(socket, WARN_CODE.SERVER_ERROR, "server error, harap hubungi admin")
       } finally {await redisHelper.releaseLock("request_question", socket.user)}
-
     })
 
     socket.on("submit_answer", async (answer)=>{
-    if(!socket.user){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "sesi habis, tolong refresh halaman")}
+      if(socket.initPromise){await socket.initPromise}
+      if(!socket.user){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "sesi habis, tolong refresh halaman")}
 
       const isLocked = await redisHelper.isLocked("submit_answer", socket.user)
       if(isLocked){return}
@@ -121,8 +119,6 @@ export function setupSocket(server) {
 
         const response = {correct: isCorrect, correctAnswer, streak: data.streak, points_added: increment}
 
-        
-        
         const changedRows = await updateUser({username: socket.user, increment, streak: data.streak})
         if(!changedRows){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
 
@@ -133,13 +129,13 @@ export function setupSocket(server) {
         socket.emit("answer_result", response)
         
       } catch(err) {
-        console.log(err)
+        console.error("Error submit_answer:", err.message)
         return socketDC(socket, WARN_CODE.SERVER_ERROR, "server error, harap hubungi admin")
       } finally {await redisHelper.releaseLock("submit_answer", socket.user)}
-
     })
 
     socket.on("disconnect", async ()=>{
+      if(socket.initPromise){await socket.initPromise}
       if(!socket.user){return}
       
       const {ok, data} = await redisHelper.get("socket", socket.user)
@@ -148,7 +144,6 @@ export function setupSocket(server) {
         await redisHelper.del("quiz", socket.user)
         await redisHelper.del("questions", socket.user)
       }
-      
     })
   })
 }

@@ -71,6 +71,7 @@ export function useSocket(socketRef, params) {
             });
 
             socket.on("new_question", (q) => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
                 paramsRef.current.setQuestion(q);
                 paramsRef.current.setQuizUI({
                     selectedAnswer: null,
@@ -95,7 +96,10 @@ export function useSocket(socketRef, params) {
 
     // 3. (Opsional tapi disarankan) Cleanup saat komponen di-unmount
     const requestQuestion = useCallback(() => {
-        if (socketRef.current && socketRef.current.connected) {
+        if (socketRef.current) {
+            if (socketRef.current.disconnected) {
+                socketRef.current.connect();
+            }
             socketRef.current.emit("request_question");
         }
 
