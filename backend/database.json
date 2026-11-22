@@ -1,0 +1,16 @@
+{
+  "dev": {
+    "driver": "mysql",
+    "ENV": "DB_URI",
+    "ssl": {
+      "rejectUnauthorized": true
+    }
+  },
+  "prod": {
+    "driver": "mysql",
+    "ENV": "DB_URI",
+    "ssl": {
+      "rejectUnauthorized": true
+    }
+  }
+}
