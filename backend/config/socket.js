@@ -44,8 +44,11 @@ export function setupSocket(server) {
         if(!user){return socketDC(socket, WARN_CODE.USER_NOT_FOUND, "akun tidak ditemukan")}
         socket.user = user.username
         
-        const ok = await redis.set(redisHelper.redisKey("socket", user.username), JSON.stringify(socket.id), {NX: true, EX: redisHelper.getTTL("socket")} )
-        if(!ok){return socketDC(socket, WARN_CODE.ACCOUNT_CONFLICT, "ada perangkat lain yang menggunakan akunmu")}
+        const {ok: hasOld, data: oldSocketId} = await redisHelper.get("socket", user.username)
+        if(hasOld && oldSocketId && oldSocketId !== socket.id){
+          await forceDisconnect(oldSocketId)
+        }
+        await redis.set(redisHelper.redisKey("socket", user.username), JSON.stringify(socket.id), {EX: redisHelper.getTTL("socket")})
         
         const {ok: ok2, data} = await redisHelper.get("quiz", socket.user)
         if(!ok2 || data.currentIndex >= totalQuestion){

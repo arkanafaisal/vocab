@@ -6,7 +6,7 @@ import { formatScore } from "../utils/formatScore";
 import { isValidUsername, isValidEmail, isValidPassword, isValidToken } from '../utils/validation'
 
 
-export function Modals({ activeModal, setActiveModal, toast, showToast, user, setUser, score, streak, startMainApp, socketRef, toggleFullscreen }) {
+export function Modals({ activeModal, setActiveModal, toast, showToast, user, setUser, score, streak, startMainApp, socketRef, toggleFullscreen, requestQuestion }) {
 
   // Auth Modal State
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -134,6 +134,20 @@ export function Modals({ activeModal, setActiveModal, toast, showToast, user, se
     setUser(null);
     if (socketRef.current) socketRef.current.disconnect();
     setActiveModal('logoutSuccess');
+  };
+
+  const handleTakeover = () => {
+    close();
+    if (socketRef.current) {
+      if (socketRef.current.disconnected) {
+        socketRef.current.connect();
+      }
+      setTimeout(() => {
+        if (requestQuestion) requestQuestion();
+      }, 300);
+    } else {
+      startMainApp();
+    }
   };
 
   return (
@@ -316,6 +330,20 @@ export function Modals({ activeModal, setActiveModal, toast, showToast, user, se
             <h3 className="text-lg font-bold text-white mb-2">Koneksi Terputus</h3>
             <p className="text-slate-400 text-sm mb-6">Terjadi kesalahan pada koneksi server.</p>
             <button onClick={() => window.location.reload()} className="w-full py-2.5 rounded-xl bg-rose-600 text-white font-bold text-sm hover:bg-rose-700 shadow-lg shadow-rose-900/20 transition-colors">Muat Ulang</button>
+          </div>
+        </div>
+      )}
+
+      {activeModal === 'accountConflict' && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-md fade-in">
+          <div className="w-full max-w-xs bg-slate-800 rounded-2xl shadow-2xl border border-amber-900/50 animate-pop-in overflow-hidden p-6 text-center">
+            <div className="mx-auto w-14 h-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mb-4"><Icons.Unplug /></div>
+            <h3 className="text-lg font-bold text-white mb-2">Akun Sedang Digunakan</h3>
+            <p className="text-slate-400 text-sm mb-6">Akun kamu sedang aktif di perangkat atau tab lain.</p>
+            <div className="flex gap-3">
+              <button onClick={handleLogout} className="flex-1 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold text-sm hover:bg-slate-700 transition-colors">Keluar</button>
+              <button onClick={handleTakeover} className="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 shadow-lg shadow-indigo-900/20 transition-colors">Pakai di Sini</button>
+            </div>
           </div>
         </div>
       )}

@@ -53,9 +53,7 @@ export function useSocket(socketRef, params) {
                         else setTimeout(() => { if (socket.disconnected) socket.connect(); }, 1000);
                         break;
                     case 1005:
-                        showToast(msg, 'error');
-                        await api.logout();
-                        handleLogoutCleanup();
+                        setActiveModal('accountConflict');
                         break;
                     default:
                         showToast(msg, 'error');

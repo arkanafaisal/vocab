@@ -166,6 +166,7 @@ export default function App() {
         startMainApp={startMainApp}
         socketRef={socketRef}
         toggleFullscreen={toggleFullscreen}
+        requestQuestion={requestQuestion}
       />
 
       <Navbar
