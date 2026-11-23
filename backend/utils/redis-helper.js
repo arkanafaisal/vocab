@@ -1,15 +1,16 @@
 import redis from "../config/redis.js"
 
+const project = process.env.PROJECT_NAME || 'vocab'
 
 const redisType = {
-    "cache": {prefix: 'vocab:cache:', ttl: 30},
-    "tokens": {prefix: 'vocab:tokens:', ttl: 60 * 60 * 168},
-    "quiz": {prefix: 'vocab:quiz:', ttl: 60 * 15},
-    "questions": {prefix: 'vocab:questions:', ttl: 60 * 15},
-    "socket": {prefix: 'vocab:socket:', ttl: 60 * 15},
-    "lock": {prefix: 'vocab:lock:', ttl: 5},
-    "update-email": {prefix: 'vocab:update-email:', ttl: 60 * 30},
-    "reset-password": {prefix: 'vocab:reset-password:', ttl: 60 * 5}
+    "cache": {prefix: `${project}:cache:`, ttl: 30},
+    "tokens": {prefix: `${project}:tokens:`, ttl: 60 * 60 * 168},
+    "quiz": {prefix: `${project}:quiz:`, ttl: 60 * 15},
+    "questions": {prefix: `${project}:questions:`, ttl: 60 * 15},
+    "socket": {prefix: `${project}:socket:`, ttl: 60 * 15},
+    "lock": {prefix: `${project}:lock:`, ttl: 5},
+    "update-email": {prefix: `${project}:update-email:`, ttl: 60 * 30},
+    "reset-password": {prefix: `${project}:reset-password:`, ttl: 60 * 5}
 }
 
 export async function isLocked(type, key){
