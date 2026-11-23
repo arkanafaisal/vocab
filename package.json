@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "Root package for Heroku Deployment",
   "scripts": {
-    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install && npm run build",
+    "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install --include=dev && npm run build",
     "start": "cd backend && npm start"
   },
   "engines": {
-    "node": ">=20.x"
+    "node": "22.x"
   }
 }
