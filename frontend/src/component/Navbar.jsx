@@ -2,6 +2,8 @@ import { Icons } from './Icons.jsx';
 
 
 export function Navbar({ user, streak, isSocketConnected, view, setView, setActiveModal, toggleFullscreen }) {
+    const getTabClass = (tab) => `flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 ${view === tab ? (streak >= 10 ? 'bg-red-800 text-white' : 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105') : 'text-slate-400 hover:text-white'}`;
+
     return (
         <nav id="navbar" className={`bg-slate-900/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm transition-colors duration-500 ${streak >= 10 ? 'border-red-500/50' : 'border-slate-700'}`}>
             <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative">
@@ -11,12 +13,12 @@ export function Navbar({ user, streak, isSocketConnected, view, setView, setActi
                 </div>
                 
                 <div className="flex bg-slate-800 border border-slate-700 p-1 rounded-xl mx-2 shrink-0 md:hidden">
-                    <button onClick={() => setView('quiz')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 ${view === 'quiz' ? (streak >= 10 ? 'bg-red-800 text-white' : 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105') : 'text-slate-400 hover:text-white'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3"/></svg> 
+                    <button onClick={() => setView('quiz')} className={getTabClass('quiz')}>
+                        <Icons.Play />
                         <span className="hidden sm:inline">Play</span>
                     </button>
-                    <button onClick={() => setView('leaderboard')} className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-xs transition-all duration-200 ${view === 'leaderboard' ? (streak >= 10 ? 'bg-red-800 text-white' : 'bg-indigo-600 text-white shadow-md shadow-indigo-900/50 scale-105') : 'text-slate-400 hover:text-white'}`}>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg> 
+                    <button onClick={() => setView('leaderboard')} className={getTabClass('leaderboard')}>
+                        <Icons.Trophy />
                         <span className="hidden sm:inline">Rank</span>
                     </button>
                 </div>

@@ -1,6 +1,59 @@
 import { formatScore } from "../utils/formatScore";
 import { Icons } from "./Icons";
 
+function QuizSkeleton({ showRetry, onRetry, isHidden }) {
+  return (
+    <div className={`flex-1 h-full flex-col ${isHidden}`}>
+      <div className="w-full h-full flex items-center justify-center p-4 fade-in">
+        <div className="w-full max-w-lg bg-slate-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col max-h-full my-auto border-2 border-slate-700 relative">
+          <div className="bg-slate-900/50 border-b border-slate-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 animate-pulse rounded-t-[22px]">
+            <div className="h-8 w-16 bg-slate-700 rounded-full"></div>
+            <div className="h-8 w-20 bg-slate-700 rounded-full"></div>
+          </div>
+          <div className="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center px-6 py-6 gap-6 animate-pulse min-h-0 rounded-b-[22px]">
+            <div className="flex flex-col items-center gap-3 w-full">
+              <div className="h-4 w-32 bg-slate-700 rounded-full"></div>
+              <div className="h-10 w-3/4 bg-slate-700 rounded-lg"></div>
+            </div>
+            <div className="flex flex-col gap-3 w-full">
+              {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[52px] w-full bg-slate-800 border-2 border-slate-700 rounded-2xl"></div>)}
+            </div>
+          </div>
+          {showRetry && (
+            <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center z-20 rounded-3xl">
+              <button onClick={onRetry} className="px-6 py-3 bg-slate-700 border border-slate-600 text-slate-200 rounded-xl font-bold hover:bg-slate-600 hover:text-white transition-all shadow-xl flex items-center gap-2 pointer-events-auto">
+                <Icons.Refresh />
+                Gagal memuat, Coba Lagi
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function getChoiceBtnClass(choice, quizUI, streak) {
+  const base = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center min-h-[52px] text-center shadow-sm overflow-hidden relative group border-2 ";
+  const isSelected = quizUI.selectedAnswer === choice;
+  const isCorrect = quizUI.correctAnswerText === choice;
+
+  if (quizUI.selectedAnswer) {
+    if (quizUI.isValidating) {
+      if (isSelected) return "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-slate-900 text-white border-2 border-amber-500/50 shadow-md";
+      return "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-slate-900 text-slate-500 border-2 border-transparent opacity-40 cursor-not-allowed";
+    }
+    if (quizUI.correctAnswerText) {
+      if (isCorrect) return "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-emerald-600 text-white border-2 border-emerald-500 shadow-emerald-900/50 scale-[1.02] z-10";
+      if (isSelected) return "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-rose-600 text-white border-2 border-rose-500 shadow-rose-900/50";
+      return base + "bg-slate-900 opacity-0 pointer-events-none transform scale-90 border-slate-700";
+    }
+  }
+
+  if (streak >= 10) return base + "bg-slate-900 text-slate-300 hover:bg-red-900/30 hover:border-red-500 border-slate-700 ";
+  if (streak >= 5) return base + "bg-slate-900 text-slate-300 hover:bg-orange-900/30 hover:border-orange-500 border-slate-700 card-fire-glow-orange ";
+  return base + "bg-slate-900 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700 ";
+}
 
 export function QuizSection({ view, streak, score, question, quizUI, floatingScores, handleAnswer, requestQuestion }) {
   const isHidden = view !== 'quiz' ? 'hidden md:flex' : 'flex';
@@ -31,35 +84,7 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
   };
 
   if (!question) {
-    return (
-      <div className={`flex-1 h-full flex-col ${isHidden}`}>
-        <div className="w-full h-full flex items-center justify-center p-4 fade-in">
-          <div className="w-full max-w-lg bg-slate-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col max-h-full my-auto border-2 border-slate-700 relative">
-            <div className="bg-slate-900/50 border-b border-slate-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 animate-pulse rounded-t-[22px]">
-              <div className="h-8 w-16 bg-slate-700 rounded-full"></div>
-              <div className="h-8 w-20 bg-slate-700 rounded-full"></div>
-            </div>
-            <div className="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center px-6 py-6 gap-6 animate-pulse min-h-0 rounded-b-[22px]">
-              <div className="flex flex-col items-center gap-3 w-full">
-                <div className="h-4 w-32 bg-slate-700 rounded-full"></div>
-                <div className="h-10 w-3/4 bg-slate-700 rounded-lg"></div>
-              </div>
-              <div className="flex flex-col gap-3 w-full">
-                {[1, 2, 3, 4, 5].map(i => <div key={i} className="h-[52px] w-full bg-slate-800 border-2 border-slate-700 rounded-2xl"></div>)}
-              </div>
-            </div>
-            {quizUI.showRetry && (
-              <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex items-center justify-center z-20 rounded-3xl">
-                <button onClick={requestQuestion} className="px-6 py-3 bg-slate-700 border border-slate-600 text-slate-200 rounded-xl font-bold hover:bg-slate-600 hover:text-white transition-all shadow-xl flex items-center gap-2 pointer-events-auto">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" /><path d="M21 3v5h-5" /><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" /><path d="M3 21v-5h5" /></svg>
-                  Gagal memuat, Coba Lagi
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+    return <QuizSkeleton showRetry={quizUI.showRetry} onRetry={requestQuestion} isHidden={isHidden} />;
   }
 
   let cardClass = "w-full max-w-lg bg-slate-800/95 backdrop-blur-sm rounded-3xl shadow-xl shadow-black/30 flex flex-col max-h-full my-auto border-2 transition-all duration-500 relative ";
@@ -95,34 +120,8 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
               <div className="flex flex-col gap-3">
                 {question.choices.map((choice, i) => {
                   const isSelected = quizUI.selectedAnswer === choice;
-                  const isCorrectAnswer = quizUI.correctAnswerText === choice;
-
-                  let btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold transition-all duration-300 ease-out flex items-center justify-center min-h-[52px] text-center shadow-sm overflow-hidden relative group border-2 ";
-
-                  if (quizUI.selectedAnswer) {
-                    if (quizUI.isValidating) {
-                      if (isSelected) {
-                        btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-slate-900 text-white border-2 border-amber-500/50 shadow-md";
-                      } else {
-                        btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-slate-900 text-slate-500 border-2 border-transparent opacity-40 cursor-not-allowed";
-                      }
-                    } else if (quizUI.correctAnswerText) {
-                      if (isCorrectAnswer) {
-                        btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-emerald-600 text-white border-2 border-emerald-500 shadow-emerald-900/50 scale-[1.02] z-10";
-                      } else if (isSelected) {
-                        btnClass = "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center shadow-lg relative overflow-hidden bg-rose-600 text-white border-2 border-rose-500 shadow-rose-900/50";
-                      } else {
-                        btnClass += " bg-slate-900 opacity-0 pointer-events-none transform scale-90 border-slate-700";
-                      }
-                    }
-                  } else {
-                    if (streak >= 10) btnClass += "bg-slate-900 text-slate-300 hover:bg-red-900/30 hover:border-red-500 border-slate-700 ";
-                    else if (streak >= 5) btnClass += "bg-slate-900 text-slate-300 hover:bg-orange-900/30 hover:border-orange-500 border-slate-700 card-fire-glow-orange ";
-                    else btnClass += "bg-slate-900 text-slate-300 hover:bg-slate-700 hover:text-white border-slate-700 ";
-                  }
-
                   return (
-                    <button key={i} disabled={!!quizUI.selectedAnswer} onClick={() => handleAnswer(choice)} className={btnClass}>
+                    <button key={i} disabled={!!quizUI.selectedAnswer} onClick={() => handleAnswer(choice)} className={getChoiceBtnClass(choice, quizUI, streak)}>
                       <span className="relative z-10 break-words w-full">{choice}</span>
                       {quizUI.isValidating && isSelected && <div className="absolute inset-0 bg-amber-500/20 animate-fill-bar origin-left z-0 opacity-100"></div>}
                     </button>
