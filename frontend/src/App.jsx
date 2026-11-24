@@ -13,6 +13,7 @@ import { Modals } from './component/Modals.jsx';
 import { ParticleCanvas } from './component/ParticleCanvas';
 
 import { api } from './services/api.js';
+import { API_BASE_URL } from './services/fetchData.js';
 import { toggleFullscreen } from './utils/toggleFullscreen';
 
 
@@ -49,7 +50,6 @@ export default function App() {
   const retryCountRef = useRef(0);
 
   const showToast = useToast(setToast)
-  const API_BASE_URL = "/api";
 
   const handleLogoutCleanup = useLogoutCleanup({
     setUser,

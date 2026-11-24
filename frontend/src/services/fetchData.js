@@ -1,9 +1,9 @@
-const API_BASE_URL = "/api";
+export const API_BASE_URL = import.meta.env.DEV ? "http://localhost:3000/api" : "/api";
 
 export async function fetchData(endpoint, method = 'GET', body = null, isRetry = false) {
     try {
         const headers = { 'Content-Type': 'application/json' };
-        const options = { method, headers };
+        const options = { method, headers, credentials: 'include' };
         if (body) options.body = JSON.stringify(body);
 
         let response = await fetch(`${API_BASE_URL}${endpoint}`, options);
@@ -17,7 +17,7 @@ export async function fetchData(endpoint, method = 'GET', body = null, isRetry =
             if (endpoint.includes('/auth/login') || endpoint.includes('/auth/register')) {
                 return responseData; 
             }
-            const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
+            const refreshRes = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
             if (refreshRes.ok) {
                 return await fetchData(endpoint, method, body, true);
             } else {
