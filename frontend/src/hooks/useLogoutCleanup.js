@@ -4,8 +4,8 @@ export function useLogoutCleanup({
   setUser,
   socketRef,
   setIsSocketConnected,
-  setActiveModal,
-  showToast
+  showToast,
+  onGuestFallback
 }) {
   return useCallback((msg = null) => {
     setUser(null);
@@ -16,14 +16,14 @@ export function useLogoutCleanup({
     }
 
     setIsSocketConnected(false);
-    setActiveModal('auth');
+    if (onGuestFallback) onGuestFallback();
 
     if (msg) showToast(msg, 'error');
   }, [
     setUser,
     socketRef,
     setIsSocketConnected,
-    setActiveModal,
-    showToast
+    showToast,
+    onGuestFallback
   ]);
 }

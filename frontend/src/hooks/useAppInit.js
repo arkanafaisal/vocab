@@ -18,7 +18,6 @@ export function useAppInit(params) {
     if (res.success) {
       if (res.forceLogout) {
         handleLogoutCleanup();
-        setQuestion({ id: 'placeholder', vocab: 'Vocabulary', choices: ['Jawaban 1', 'Jawaban 2', 'Jawaban 3', 'Jawaban 4', 'Jawaban 5'] });
         fetchLeaderboardData();
         return;
       }
@@ -34,8 +33,6 @@ export function useAppInit(params) {
       fetchLeaderboardData();
       if (!document.fullscreenElement) setActiveModal('fullscreen');
     } else {
-      setActiveModal('auth');
-      setQuestion({ id: 'placeholder', vocab: 'Vocabulary', choices: ['Jawaban 1', 'Jawaban 2', 'Jawaban 3', 'Jawaban 4', 'Jawaban 5'] });
       fetchLeaderboardData();
     }
   }, []);

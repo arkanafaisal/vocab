@@ -68,4 +68,14 @@ dataController.deleteData = async (req, res) => {
 //     }
 // }
 
+dataController.getGuestQuiz = async (req, res) => {
+    try {
+        const questions = await DataModel.getRandomQuizData({ num: 100 })
+        return response(res, true, "successfully fetched guest quiz", questions)
+    } catch (err) {
+        console.error(err.message)
+        return response(res, false, "server error", null, 500)
+    }
+}
+
 export default dataController

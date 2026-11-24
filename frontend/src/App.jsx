@@ -15,6 +15,7 @@ import { ParticleCanvas } from './component/ParticleCanvas';
 import { api } from './services/api.js';
 import { API_BASE_URL } from './services/fetchData.js';
 import { toggleFullscreen } from './utils/toggleFullscreen';
+import { loadNextGuestQuestion } from './utils/guestQuiz';
 
 
 
@@ -23,6 +24,7 @@ import { toggleFullscreen } from './utils/toggleFullscreen';
 
 export default function App() {
   const [user, setUser] = useState(null);
+  const [guestUser, setGuestUser] = useState(null);
   const [score, setScore] = useState(0);
   const [streak, setStreak] = useState(0);
   const [view, setView] = useState('quiz'); // 'quiz' | 'leaderboard'
@@ -51,12 +53,20 @@ export default function App() {
 
   const showToast = useToast(setToast)
 
+  const loadGuestMode = useCallback(async () => {
+    const { state, question: nextQ } = await loadNextGuestQuestion(api.getGuestQuiz);
+    setGuestUser({ username: state.username, isGuest: true });
+    setScore(state.score);
+    setStreak(state.streak);
+    if (nextQ) setQuestion(nextQ);
+  }, []);
+
   const handleLogoutCleanup = useLogoutCleanup({
     setUser,
     socketRef,
     setIsSocketConnected,
-    setActiveModal,
-    showToast
+    showToast,
+    onGuestFallback: loadGuestMode
   });
   // --- Socket Management ---
   const { connectSocket, requestQuestion } = useSocket(socketRef, {
@@ -70,6 +80,16 @@ export default function App() {
     handleLogoutCleanup,
     API_BASE_URL
   });
+
+  const handleRequestQuestion = useCallback(async () => {
+    if (user) {
+      requestQuestion();
+      return;
+    }
+
+    const { question: nextQ } = await loadNextGuestQuestion(api.getGuestQuiz);
+    if (nextQ) setQuestion(nextQ);
+  }, [user, requestQuestion]);
 
 
   // --- Quiz Logic Engine ---
@@ -99,11 +119,11 @@ export default function App() {
         setQuizUI(prev => ({ ...prev, isTransitioning: true }));
         setTimeout(() => {
           setQuizUI({ selectedAnswer: null, isValidating: false, isTransitioning: false, correctAnswerText: null, animationFinished: false, pendingResult: null, showRetry: false, popScore: false });
-          requestQuestion();
+          handleRequestQuestion();
         }, 300);
       }, 1000);
     }
-  }, [quizUI.animationFinished, quizUI.pendingResult, requestQuestion]);
+  }, [quizUI.animationFinished, quizUI.pendingResult, handleRequestQuestion]);
 
   const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef, question})
 
@@ -116,10 +136,10 @@ export default function App() {
     if (res.success) {
       if (res.forceLogout) {
         handleLogoutCleanup();
-        setQuestion({ id: 'placeholder', vocab: 'Vocabulary', choices: ['Jawaban 1', 'Jawaban 2', 'Jawaban 3', 'Jawaban 4', 'Jawaban 5'] });
         fetchLeaderboardData();
         return;
       }
+      setGuestUser(null);
       setUser(res.data);
       if (res.data.streak !== undefined) setStreak(res.data.streak);
       if (res.data.score !== undefined) setScore(res.data.score);
@@ -131,11 +151,10 @@ export default function App() {
       fetchLeaderboardData();
       if (!document.fullscreenElement) setActiveModal('fullscreen');
     } else {
-      setActiveModal('auth');
-      setQuestion({ id: 'placeholder', vocab: 'Vocabulary', choices: ['Jawaban 1', 'Jawaban 2', 'Jawaban 3', 'Jawaban 4', 'Jawaban 5'] });
+      await loadGuestMode();
       fetchLeaderboardData();
     }
-  }, [connectSocket, fetchLeaderboardData, handleLogoutCleanup, requestQuestion]);
+  }, [connectSocket, fetchLeaderboardData, handleLogoutCleanup, loadGuestMode, requestQuestion]);
 
   useEffect(() => {
     const hash = window.location.hash;
@@ -188,10 +207,10 @@ export default function App() {
           view={view} streak={streak} score={score}
           question={question} quizUI={quizUI}
           floatingScores={floatingScores}
-          handleAnswer={handleAnswer} requestQuestion={requestQuestion}
+          handleAnswer={handleAnswer} requestQuestion={handleRequestQuestion}
         />
         <LeaderboardSection
-          view={view} streak={streak} score={score} user={user}
+          view={view} streak={streak} score={score} user={user} guestUser={guestUser}
           leaderboard={leaderboard} lbStatus={lbStatus} lbCooldown={lbCooldown}
           fetchLeaderboardData={fetchLeaderboardData}
           setActiveModal={setActiveModal}

@@ -6,6 +6,7 @@ export const api = {
   register: (username, password, email) => fetchData('/auth/register', 'POST', { username, password, ...(email ? { email } : {}) }),
   logout: () => fetchData('/auth/logout', 'DELETE'),
   getLeaderboard: () => fetchData('/users/', 'GET'),
+  getGuestQuiz: () => fetchData('/data/guest-quiz', 'GET'),
   getMe: () => fetchData('/users/me', 'GET'),
   updateUsername: (newUsername, password) => fetchData('/users/update-username', 'PATCH', { newUsername, password }),
   updateEmail: (newEmail, password) => fetchData('/users/update-email', 'PATCH', { newEmail, password }),

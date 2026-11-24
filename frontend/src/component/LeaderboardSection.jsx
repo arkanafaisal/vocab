@@ -24,21 +24,23 @@ function LeaderboardRow({ rank, username, score, streak, isMe, isFire, isFooter 
   );
 }
 
-export function LeaderboardSection({ view, streak, score, user, leaderboard, lbStatus, lbCooldown, fetchLeaderboardData, setActiveModal }) {
+export function LeaderboardSection({ view, streak, score, user, guestUser, leaderboard, lbStatus, lbCooldown, fetchLeaderboardData, setActiveModal }) {
   const isHidden = view !== 'leaderboard' ? 'hidden md:flex' : 'flex';
+  const activePlayer = user || guestUser;
+  const isGuestMode = !user && Boolean(guestUser);
 
   let displayList = [...leaderboard];
-  if (user) {
-    const exists = displayList.find(u => u.username === user.username);
+  if (activePlayer) {
+    const exists = displayList.find(u => u.username === activePlayer.username);
     if (!exists) {
-      displayList.push({ username: user.username, score: score, streak: streak || 0 });
+      displayList.push({ username: activePlayer.username, score: score, streak: streak || 0 });
     } else {
       exists.score = Math.max(exists.score, score);
-      if (exists.username === user.username) exists.streak = streak;
+      if (exists.username === activePlayer.username) exists.streak = streak;
     }
   }
   displayList.sort((a, b) => b.score - a.score);
-  const myRankData = displayList.findIndex(u => user && u.username === user.username);
+  const myRankData = displayList.findIndex(u => activePlayer && u.username === activePlayer.username);
 
   let btnClass = "w-full py-4 rounded-2xl transition-all flex items-center justify-center gap-2 font-bold shadow-md text-sm md:text-base shrink-0 ";
   let btnText = "Refresh Leaderboard";
@@ -84,7 +86,7 @@ export function LeaderboardSection({ view, streak, score, user, leaderboard, lbS
                     username={u.username}
                     score={u.score}
                     streak={u.streak}
-                    isMe={user && u.username === user.username}
+                    isMe={activePlayer && u.username === activePlayer.username}
                     isFire={streak >= 10}
                     isFooter={false}
                   />
@@ -92,6 +94,13 @@ export function LeaderboardSection({ view, streak, score, user, leaderboard, lbS
               </tbody>
             </table>
           </div>
+
+          {isGuestMode && (
+            <div className="bg-indigo-950/60 border-t border-indigo-500/30 px-4 py-2.5 text-xs text-indigo-200 flex items-center justify-between gap-2 shrink-0">
+              <span>Mode offline: skor hanya lokal & tidak terlihat pemain lain.</span>
+              <button onClick={() => setActiveModal('auth')} className="shrink-0 font-bold text-indigo-400 hover:text-indigo-300 underline">Login</button>
+            </div>
+          )}
 
           {myRankData !== -1 && (
             <div className={`border-t shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.2)] px-0 transition-colors duration-1000 ${streak >= 10 ? 'bg-red-900/20 border-red-900/30' : 'bg-amber-900/20 border-amber-900/30'}`}>
