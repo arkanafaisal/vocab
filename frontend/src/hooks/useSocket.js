@@ -66,6 +66,13 @@ export function useSocket(socketRef, params) {
 
                 if (res.ok) socket.connect();
                 else handleLogoutCleanup("Gagal terhubung ke game server. Silakan login ulang.");
+                try {
+                    const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
+                    if (res.ok) socket.connect();
+                    else if (res.status === 401 || res.status === 403) handleLogoutCleanup("Sesi login habis. Beralih ke mode offline.");
+                } catch {
+                    handleLogoutCleanup("Server tidak terjangkau. Beralih ke mode offline.");
+                }
             });
 
             socket.on("new_question", (q) => {

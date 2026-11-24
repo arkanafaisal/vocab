@@ -83,7 +83,7 @@ export function getGuestQuestionFormatted(state) {
   };
 }
 
-export async function loadNextGuestQuestion(fetchBatchFn) {
+export async function ensureGuestQuizCached(fetchBatchFn) {
   const state = getGuestState();
   if (!state.questions || state.questions.length === 0 || state.currentIndex >= state.questions.length) {
     const res = await fetchBatchFn();
@@ -91,10 +91,15 @@ export async function loadNextGuestQuestion(fetchBatchFn) {
       state.questions = res.data;
       state.currentIndex = 0;
       saveGuestState(state);
-    } else if (state.questions && state.questions.length > 0) {
+    } else if (state.questions && state.questions.length > 0 && state.currentIndex >= state.questions.length) {
       state.currentIndex = 0;
       saveGuestState(state);
     }
   }
+  return state;
+}
+
+export async function loadNextGuestQuestion(fetchBatchFn) {
+  const state = await ensureGuestQuizCached(fetchBatchFn);
   return { state, question: getGuestQuestionFormatted(state) };
 }

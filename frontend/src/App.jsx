@@ -15,7 +15,7 @@ import { ParticleCanvas } from './component/ParticleCanvas';
 import { api } from './services/api.js';
 import { API_BASE_URL } from './services/fetchData.js';
 import { toggleFullscreen } from './utils/toggleFullscreen';
-import { loadNextGuestQuestion } from './utils/guestQuiz';
+import { ensureGuestQuizCached, loadNextGuestQuestion } from './utils/guestQuiz';
 
 
 
@@ -58,7 +58,12 @@ export default function App() {
     setGuestUser({ username: state.username, isGuest: true });
     setScore(state.score);
     setStreak(state.streak);
-    if (nextQ) setQuestion(nextQ);
+    if (nextQ) {
+      setQuestion(nextQ);
+    } else {
+      setQuestion(null);
+      setQuizUI(prev => ({ ...prev, showRetry: true }));
+    }
   }, []);
 
   const handleLogoutCleanup = useLogoutCleanup({
@@ -148,6 +153,7 @@ export default function App() {
       setQuestion(null);
       setTimeout(() => requestQuestion(), 500);
 
+      ensureGuestQuizCached(api.getGuestQuiz);
       fetchLeaderboardData();
       if (!document.fullscreenElement) setActiveModal('fullscreen');
     } else {
