@@ -7,9 +7,12 @@ export function Navbar({ user, streak, isSocketConnected, view, setView, setActi
     return (
         <nav id="navbar" className={`bg-slate-900/80 backdrop-blur-md border-b sticky top-0 z-50 shadow-sm transition-colors duration-500 ${streak >= 10 ? 'border-red-500/50' : 'border-slate-700'}`}>
             <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between relative">
-                <div className={`font-black text-xl tracking-tight shrink-0 flex items-center gap-1 ${streak >= 10 ? 'animate-logo-shake' : ''}`}>
-                    <span className={streak >= 10 ? 'text-fire' : 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400'}>Vocab</span>
-                    <span className="hidden sm:inline text-slate-200">Master</span>
+                <div className={`font-black text-xl tracking-tight shrink-0 flex items-center gap-2 ${streak >= 10 ? 'animate-logo-shake' : ''}`}>
+                    <img src="/favicon.svg" alt="Vocab Logo" className="w-7 h-7" />
+                    <div className="flex items-center gap-1">
+                        <span className={streak >= 10 ? 'text-fire' : 'text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400'}>Vocab</span>
+                        <span className="hidden sm:inline text-slate-200">Master</span>
+                    </div>
                 </div>
                 
                 <div className="flex bg-slate-800 border border-slate-700 p-1 rounded-xl mx-2 shrink-0 md:hidden">

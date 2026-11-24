@@ -148,6 +148,14 @@ export default function App() {
     }
   }, [startMainApp]);
 
+  useEffect(() => {
+    if (user && user.username) {
+      document.title = `Vocab - ${user.username}`;
+    } else {
+      document.title = "Vocab";
+    }
+  }, [user]);
+
   
 
   return (
