@@ -82,8 +82,9 @@ export function setupSocket(server) {
   
           socket.emit("new_question", firstQuestion)
         } else {
+          await redis.expire(redisHelper.redisKey("questions", socket.user), redisHelper.getTTL("questions"))
           const {answerIndex, ...safeQuestion} = newQuestion
-          socket.emit("new_question", safeQuestion)
+          socket.emit("new_question", { ...safeQuestion, index: data.currentIndex })
         }
         
       } catch(err) {
@@ -92,9 +93,11 @@ export function setupSocket(server) {
       } finally {await redisHelper.releaseLock("request_question", socket.user)}
     })
 
-    socket.on("submit_answer", async (answer)=>{
+    socket.on("submit_answer", async (payload)=>{
       if(socket.initPromise){await socket.initPromise}
       if(!socket.user){return socketDC(socket, WARN_CODE.UNAUTHORIZED, "sesi habis, tolong refresh halaman")}
+
+      const { answer, index: clientIndex } = payload || {}
 
       const isLocked = await redisHelper.isLocked("submit_answer", socket.user)
       if(isLocked){return}
@@ -103,10 +106,29 @@ export function setupSocket(server) {
         const {ok, data} = await redisHelper.get("quiz", socket.user)
         if(!ok){return socketDC(socket, WARN_CODE.SESSION_EXPIRED, "sesi habis, membuatkan sesi baru...")}
         
-        if(data.currentIndex >= totalQuestion){return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "pertanyaan tidak sinkron, membuatkan pertanyaan baru...")}
+        if(data.currentIndex >= totalQuestion){
+          const firstQuestion = await setNewBatch(socket.user, data.streak)
+          if(firstQuestion) socket.emit("new_question", firstQuestion)
+          return
+        }
+
+        if(clientIndex !== data.currentIndex){
+          const rawCurrent = await redis.lIndex(redisHelper.redisKey("questions", socket.user), data.currentIndex)
+          const currentQ = rawCurrent ? JSON.parse(rawCurrent) : null
+          if (currentQ) {
+            const { answerIndex, ...safeQ } = currentQ
+            socket.emit("new_question", { ...safeQ, index: data.currentIndex })
+          }
+          socket.emit("warn", {
+            code: WARN_CODE.TEMP_FAILURE,
+            message: "Pertanyaan tidak sinkron, menampilkan pertanyaan terbaru..."
+          })
+          return
+        }
+
         const raw = await redis.lIndex(redisHelper.redisKey("questions", socket.user), data.currentIndex)
         const question = raw? JSON.parse(raw) : null
-        if (!question) { return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "pertanyaan tidak sinkron, membuatkan pertanyaan baru...")}
+        if (!question) { return socketDC(socket, WARN_CODE.TEMP_FAILURE, "pertanyaan tidak ditemukan, memuat ulang...")}
 
         const correctAnswer = question.choices[question.answerIndex]
         const isCorrect = correctAnswer === answer
@@ -127,7 +149,8 @@ export function setupSocket(server) {
 
         data.currentIndex++
         const {ok:ok2} = await redisHelper.set("quiz", socket.user, data)
-        if(!ok2){return socketDC(socket, WARN_CODE.QUIZ_OUT_OF_SYNC, "gagal menyimpan data baru")}
+        if(!ok2){return socketDC(socket, WARN_CODE.TEMP_FAILURE, "gagal menyimpan data baru")}
+        await redis.expire(redisHelper.redisKey("questions", socket.user), redisHelper.getTTL("questions"))
   
         socket.emit("answer_result", response)
         
@@ -144,8 +167,6 @@ export function setupSocket(server) {
       const {ok, data} = await redisHelper.get("socket", socket.user)
       if(ok && data === socket.id) {
         await redisHelper.del("socket", socket.user)
-        await redisHelper.del("quiz", socket.user)
-        await redisHelper.del("questions", socket.user)
       }
     })
   })
@@ -196,5 +217,5 @@ async function setNewBatch(username, streak) {
   if(!ok2){return null}
 
   const {answerIndex, ...safeQuestion} = questions[0]
-  return safeQuestion
+  return { ...safeQuestion, index: 0 }
 }

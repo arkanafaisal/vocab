@@ -1,22 +1,21 @@
 import { useCallback, useRef, useEffect } from "react";
 
-export function useQuizActions({ quizUI, setQuizUI, user, socketRef }) {
-  // Gunakan pola Latest Ref yang kita bahas sebelumnya agar terhindar dari stale closure
-  const paramsRef = useRef({ quizUI, setQuizUI, user });
+export function useQuizActions({ quizUI, setQuizUI, user, socketRef, question }) {
+  const paramsRef = useRef({ quizUI, setQuizUI, user, question });
 
   useEffect(() => {
-    paramsRef.current = { quizUI, setQuizUI, user };
+    paramsRef.current = { quizUI, setQuizUI, user, question };
   });
 
   const handleAnswer = useCallback((choice) => {
-    const { quizUI, setQuizUI, user } = paramsRef.current;
+    const { quizUI, setQuizUI, user, question } = paramsRef.current;
 
     if (quizUI.isValidating || quizUI.selectedAnswer) return;
     
     setQuizUI(prev => ({ ...prev, selectedAnswer: choice, isValidating: true, animationFinished: false, pendingResult: null }));
 
     if (user && socketRef.current?.connected) {
-      socketRef.current.emit("submit_answer", choice);
+      socketRef.current.emit("submit_answer", { answer: choice, index: question?.index });
     } else {
       setTimeout(() => setQuizUI(prev => ({ ...prev, selectedAnswer: null, isValidating: false })), 1000);
       return;

@@ -105,7 +105,7 @@ export default function App() {
     }
   }, [quizUI.animationFinished, quizUI.pendingResult, requestQuestion]);
 
-  const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef})
+  const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef, question})
 
   // --- Leaderboard Logic ---
   const { leaderboard, lbStatus, lbCooldown, fetchLeaderboardData } = useLeaderboard()
