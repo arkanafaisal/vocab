@@ -14,18 +14,20 @@ import { forceDisconnect } from '../config/socket.js';
 
 const authController = {}
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const cookieOptions = {
     accessToken: {
         httpOnly: true,
-        sameSite: 'strict',
-        secure: true,
+        sameSite: isProd ? 'strict' : 'lax',
+        secure: isProd,
         path: '/',
         maxAge: 10* 60 * 1000
     },
     refreshToken: {
         httpOnly: true,
-        sameSite: 'strict',
-        secure: true,
+        sameSite: isProd ? 'strict' : 'lax',
+        secure: isProd,
         path: '/',
         maxAge: 168 * 60 * 60 * 1000
     }

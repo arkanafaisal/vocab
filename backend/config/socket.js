@@ -29,7 +29,18 @@ const totalQuestion = 50
 
 let io = null
 export function setupSocket(server) {
-  io = new Server(server)
+  const allowedOrigins = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+  io = new Server(server, {
+    cors: {
+      origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'production') {
+          return callback(null, true);
+        }
+        return callback(null, false);
+      },
+      credentials: true
+    }
+  })
 
   io.on("connection", (socket) => {
     socket.initPromise = (async () => {

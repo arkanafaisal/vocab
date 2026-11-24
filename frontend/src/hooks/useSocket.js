@@ -15,7 +15,7 @@ export function useSocket(socketRef, params) {
         if (socketRef.current) return;
 
         try {
-            const socket = io("/", { withCredentials: true, transports: ['websocket'] });
+            const socket = io(import.meta.env.DEV ? "http://localhost:3000" : "/", { withCredentials: true, transports: ['websocket'] });
             socketRef.current = socket;
 
             // Gunakan paramsRef.current.[nama_fungsi] di dalam semua listener
@@ -62,7 +62,7 @@ export function useSocket(socketRef, params) {
 
             socket.on("connect_error", async () => {
                 const { API_BASE_URL, handleLogoutCleanup } = paramsRef.current;
-                const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST' });
+                const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
 
                 if (res.ok) socket.connect();
                 else handleLogoutCleanup("Gagal terhubung ke game server. Silakan login ulang.");
