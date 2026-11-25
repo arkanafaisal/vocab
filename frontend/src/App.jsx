@@ -208,6 +208,12 @@ export default function App() {
         setActiveModal={setActiveModal} toggleFullscreen={toggleFullscreen}
       />
 
+      {!user && guestUser && (
+        <div className="md:hidden bg-indigo-950/80 border-b border-indigo-500/30 px-4 py-1.5 text-[11px] text-indigo-200 text-center shrink-0">
+          Quiz & skor hanya lokal, tidak terlihat pemain lain.
+        </div>
+      )}
+
       <main className="flex-1 overflow-hidden relative flex flex-col md:flex-row p-4 gap-4 max-w-6xl mx-auto w-full">
         <QuizSection
           view={view} streak={streak} score={score}

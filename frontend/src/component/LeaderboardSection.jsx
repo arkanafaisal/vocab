@@ -96,8 +96,8 @@ export function LeaderboardSection({ view, streak, score, user, guestUser, leade
           </div>
 
           {isGuestMode && (
-            <div className="bg-indigo-950/60 border-t border-indigo-500/30 px-4 py-2.5 text-xs text-indigo-200 flex items-center justify-between gap-2 shrink-0">
-              <span>Mode offline: skor hanya lokal & tidak terlihat pemain lain.</span>
+            <div className="hidden md:flex bg-indigo-950/60 border-t border-indigo-500/30 px-4 py-2.5 text-[10px] lg:text-xs text-indigo-200 items-center justify-between gap-2 shrink-0">
+              <span>Quiz & skor hanya lokal, tidak terlihat pemain lain.</span>
               <button onClick={() => setActiveModal('auth')} className="shrink-0 font-bold text-indigo-400 hover:text-indigo-300 underline">Login</button>
             </div>
           )}
