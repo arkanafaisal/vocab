@@ -6,6 +6,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
 const INPUT_JSON_PATH = path.join(DATA_DIR, '07-final.json');
 
+try {
+  process.loadEnvFile(path.join(__dirname, '.env'));
+} catch {
+  // Abaikan jika file .env tidak ada.
+}
+
 export const UPLOAD_CONFIG = {
   endpointUrl: process.env.VOCAB_INSERT_URL || 'http://localhost:3000/api/data/insert',
   dataAccessToken: process.env.DATA_ACCESS_TOKEN || '',
