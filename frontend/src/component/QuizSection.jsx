@@ -120,7 +120,7 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
           <div className="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10 min-h-0 rounded-b-[22px]">
             <div className="px-6 py-6 text-center">
               <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-2">Apa arti kata:</h2>
-              <h1 className={`text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white transition-opacity duration-300 ${quizUI.isTransitioning ? 'opacity-0' : 'opacity-100'}`}>{question.vocab}</h1>
+              <h1 translate="no" className={`notranslate text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white transition-opacity duration-300 ${quizUI.isTransitioning ? 'opacity-0' : 'opacity-100'}`}>{question.vocab}</h1>
             </div>
             <div className="px-6 pb-3">
               <div className="flex flex-col gap-3">
