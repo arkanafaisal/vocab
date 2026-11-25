@@ -1,12 +1,21 @@
 import { useCallback, useRef, useEffect } from "react";
 import { evaluateGuestAnswer } from "../utils/guestQuiz";
 
-export function useQuizActions({ quizUI, setQuizUI, user, socketRef, question }) {
+export function useQuizActions({ quizUI, setQuizUI, user, socketRef, question, onAnswerTimeout }) {
   const paramsRef = useRef({ quizUI, setQuizUI, user, question });
 
   useEffect(() => {
     paramsRef.current = { quizUI, setQuizUI, user, question };
   });
+
+  useEffect(() => {
+    if (quizUI.isValidating && !quizUI.pendingResult && user) {
+      const timer = setTimeout(() => {
+        if (onAnswerTimeout) onAnswerTimeout("Koneksi gagal. Beralih ke mode offline.");
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [quizUI.isValidating, quizUI.pendingResult, user, onAnswerTimeout]);
 
   const handleAnswer = useCallback((choice) => {
     const { quizUI, setQuizUI, user, question } = paramsRef.current;

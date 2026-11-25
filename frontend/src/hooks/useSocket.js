@@ -62,16 +62,12 @@ export function useSocket(socketRef, params) {
 
             socket.on("connect_error", async () => {
                 const { API_BASE_URL, handleLogoutCleanup } = paramsRef.current;
-                const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
-
-                if (res.ok) socket.connect();
-                else handleLogoutCleanup("Gagal terhubung ke game server. Silakan login ulang.");
                 try {
                     const res = await fetch(`${API_BASE_URL}/auth/refresh`, { method: 'POST', credentials: 'include' });
                     if (res.ok) socket.connect();
                     else if (res.status === 401 || res.status === 403) handleLogoutCleanup("Sesi login habis. Beralih ke mode offline.");
                 } catch {
-                    handleLogoutCleanup("Server tidak terjangkau. Beralih ke mode offline.");
+                    handleLogoutCleanup("Koneksi gagal. Beralih ke mode offline.");
                 }
             });
 
@@ -112,12 +108,15 @@ export function useSocket(socketRef, params) {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
         timeoutRef.current = setTimeout(() => {
-            // Kita gunakan paramsRef.current untuk mengambil setQuizUI versi terbaru
+            if (paramsRef.current.isTransitioning) {
+                paramsRef.current.handleLogoutCleanup("Koneksi gagal. Beralih ke mode offline.");
+                return;
+            }
             paramsRef.current.setQuizUI(prev => {
                 if (prev.isValidating) return prev;
                 return { ...prev, showRetry: true };
             });
-        }, 3000);
+        }, 4000);
     }, [])
 
     useEffect(() => {

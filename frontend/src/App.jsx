@@ -58,6 +58,16 @@ export default function App() {
     setGuestUser({ username: state.username, isGuest: true });
     setScore(state.score);
     setStreak(state.streak);
+    setQuizUI({
+      selectedAnswer: null,
+      isValidating: false,
+      isTransitioning: false,
+      correctAnswerText: null,
+      animationFinished: false,
+      pendingResult: null,
+      showRetry: false,
+      popScore: false
+    });
     if (nextQ) {
       setQuestion(nextQ);
     } else {
@@ -83,7 +93,8 @@ export default function App() {
     retryCountRef,
     api,
     handleLogoutCleanup,
-    API_BASE_URL
+    API_BASE_URL,
+    isTransitioning: quizUI.isTransitioning
   });
 
   const handleRequestQuestion = useCallback(async () => {
@@ -139,7 +150,7 @@ export default function App() {
     }
   }, [quizUI.animationFinished, quizUI.pendingResult, handleRequestQuestion]);
 
-  const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef, question})
+  const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef, question, onAnswerTimeout: handleLogoutCleanup})
 
   // --- Leaderboard Logic ---
   const { leaderboard, lbStatus, lbCooldown, fetchLeaderboardData } = useLeaderboard()
