@@ -94,6 +94,16 @@ export default function App() {
 
     const { question: nextQ } = await loadNextGuestQuestion(api.getGuestQuiz);
     if (nextQ) setQuestion(nextQ);
+    setQuizUI({
+      selectedAnswer: null,
+      isValidating: false,
+      isTransitioning: false,
+      correctAnswerText: null,
+      animationFinished: false,
+      pendingResult: null,
+      showRetry: false,
+      popScore: false
+    });
   }, [user, requestQuestion]);
 
 
@@ -121,9 +131,8 @@ export default function App() {
       }
 
       setTimeout(() => {
-        setQuizUI(prev => ({ ...prev, isTransitioning: true }));
+        setQuizUI(prev => ({ ...prev, isTransitioning: true, animationFinished: false, pendingResult: null }));
         setTimeout(() => {
-          setQuizUI({ selectedAnswer: null, isValidating: false, isTransitioning: false, correctAnswerText: null, animationFinished: false, pendingResult: null, showRetry: false, popScore: false });
           handleRequestQuestion();
         }, 300);
       }, 1000);

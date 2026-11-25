@@ -95,7 +95,7 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
 
   return (
     <div className={`flex-1 h-full flex-col ${isHidden}`}>
-      <div className={`w-full h-full flex items-center justify-center p-4 fade-in transition-all duration-500 ease-out ${quizUI.isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+      <div className={`w-full h-full flex items-center justify-center p-4 fade-in transition-all duration-300 ease-out ${quizUI.isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
         <div className={cardClass}>
           <div className="bg-slate-900/50 border-b border-slate-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 rounded-t-[22px]">
             <div className="flex-1 flex justify-start">{renderStreakBadge()}</div>
