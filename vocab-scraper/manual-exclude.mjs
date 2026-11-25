@@ -36,7 +36,8 @@ export const MANUAL_EXCLUDE_WORDS = [
   
   'alway', 'anyth', 'ongo', 'qilin', 'rep', 'tens', 'themselve',
   'downstair', 'inclin', 'upstair', 'noth', 'trie', 'gent', 'someth',
-  'huuu', 'ceil', 'lightn', 'crie', 'saie', 'staie', ''
+  'huuu', 'ceil', 'lightn', 'crie', 'saie', 'staie', 'continu', 'determin',
+  'dure', 'everyth', 'focuse', 'increas', 'morn', 'nake', 'notie', 'panick', 'rais',
 ];
 
 /**

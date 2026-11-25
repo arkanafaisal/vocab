@@ -20,7 +20,7 @@ export const TRANSLATE_CONFIG = {
   sourceLang: 'en',
   targetLang: 'id',
   appsScriptUrl: '',
-  email: '',
+  email: 'lepreeeee@gmail.com',
   batchSize: 25,
   maxBatchChars: 420,
   delayMs: 350,
