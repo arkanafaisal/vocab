@@ -4,8 +4,8 @@ const SOUND_PATHS = {
   correct: "/sounds/correct.wav",
   wrong: "/sounds/wrong.wav",
   normal: "/sounds/bgm-normal.wav",
-  medium: "/sounds/bgm-fire-medium.wav",
-  intense: "/sounds/bgm-fire-intense.wav"
+  fireLoop: "/sounds/freesound_community-fire-burning-loop-6135.mp3",
+  fireCrackle: "/sounds/virtualzero-campfire-burning-wood-ambience-hd-375866.mp3"
 };
 
 export function useAudio(streak) {
@@ -19,15 +19,17 @@ export function useAudio(streak) {
   const ctxRef = useRef(null);
   const masterGainRef = useRef(null);
   const bgmGainRef = useRef(null);
+  const overlayGainRef = useRef(null);
   const sfxGainRef = useRef(null);
   const buffersRef = useRef({});
   const loadingRef = useRef({});
   const bgmSourceRef = useRef(null);
-  const currentBgmKeyRef = useRef(null);
+  const overlaySourceRef = useRef(null);
+  const currentBaseKeyRef = useRef(null);
   const unlockedRef = useRef(false);
 
-  const bgmKey = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "normal";
-  const bgmKeyRef = useRef(bgmKey);
+  const tier = streak >= 10 ? "intense" : streak >= 5 ? "medium" : "normal";
+  const tierRef = useRef(tier);
 
   useEffect(() => {
     isMutedRef.current = isMuted;
@@ -38,8 +40,8 @@ export function useAudio(streak) {
   }, [volume]);
 
   useEffect(() => {
-    bgmKeyRef.current = bgmKey;
-  }, [bgmKey]);
+    tierRef.current = tier;
+  }, [tier]);
 
   const ensureContext = useCallback(() => {
     if (!ctxRef.current) {
@@ -48,19 +50,23 @@ export function useAudio(streak) {
       const ctx = new AudioCtx();
       const master = ctx.createGain();
       const bgmGain = ctx.createGain();
+      const overlayGain = ctx.createGain();
       const sfxGain = ctx.createGain();
 
       master.gain.value = isMutedRef.current ? 0 : volumeRef.current;
       bgmGain.gain.value = 0.55;
+      overlayGain.gain.value = 0.55;
       sfxGain.gain.value = 1;
 
       bgmGain.connect(master);
+      overlayGain.connect(master);
       sfxGain.connect(master);
       master.connect(ctx.destination);
 
       ctxRef.current = ctx;
       masterGainRef.current = master;
       bgmGainRef.current = bgmGain;
+      overlayGainRef.current = overlayGain;
       sfxGainRef.current = sfxGain;
     }
 
@@ -90,32 +96,71 @@ export function useAudio(streak) {
     return loadingRef.current[key];
   }, [ensureContext]);
 
-  const startBgm = useCallback(async (key) => {
-    if (!unlockedRef.current || isMutedRef.current) return;
-    if (currentBgmKeyRef.current === key && bgmSourceRef.current) return;
-
-    const ctx = ensureContext();
-    if (!ctx) return;
-
-    const buffer = await loadBuffer(key);
-    if (!buffer || isMutedRef.current || bgmKeyRef.current !== key) return;
-
+  const stopBgm = useCallback(() => {
     if (bgmSourceRef.current) {
       try {
         bgmSourceRef.current.stop();
         bgmSourceRef.current.disconnect();
       } catch {}
+      bgmSourceRef.current = null;
+    }
+    currentBaseKeyRef.current = null;
+  }, []);
+
+  const stopOverlay = useCallback(() => {
+    if (overlaySourceRef.current) {
+      try {
+        overlaySourceRef.current.stop();
+        overlaySourceRef.current.disconnect();
+      } catch {}
+      overlaySourceRef.current = null;
+    }
+  }, []);
+
+  const syncBgm = useCallback(async (targetTier) => {
+    if (!unlockedRef.current || isMutedRef.current) return;
+
+    const ctx = ensureContext();
+    if (!ctx) return;
+
+    if (targetTier !== "intense") {
+      stopOverlay();
     }
 
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.loop = true;
-    source.connect(bgmGainRef.current);
-    source.start(0);
+    const baseKey = targetTier === "normal" ? "normal" : "fireLoop";
+    const targetBgmGain = targetTier === "intense" ? 0.72 : 0.55;
+    bgmGainRef.current.gain.setTargetAtTime(targetBgmGain, ctx.currentTime, 0.1);
 
-    bgmSourceRef.current = source;
-    currentBgmKeyRef.current = key;
-  }, [ensureContext, loadBuffer]);
+    if (currentBaseKeyRef.current !== baseKey || !bgmSourceRef.current) {
+      const buffer = await loadBuffer(baseKey);
+      if (!buffer || isMutedRef.current || tierRef.current !== targetTier) return;
+
+      stopBgm();
+
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.loop = true;
+      source.connect(bgmGainRef.current);
+      source.start(0);
+
+      bgmSourceRef.current = source;
+      currentBaseKeyRef.current = baseKey;
+    }
+
+    if (targetTier === "intense" && !overlaySourceRef.current) {
+      const crackleBuf = await loadBuffer("fireCrackle");
+      if (!crackleBuf || isMutedRef.current || tierRef.current !== "intense") return;
+
+      stopOverlay();
+
+      const overlay = ctx.createBufferSource();
+      overlay.buffer = crackleBuf;
+      overlay.loop = true;
+      overlay.connect(overlayGainRef.current);
+      overlay.start(0);
+      overlaySourceRef.current = overlay;
+    }
+  }, [ensureContext, loadBuffer, stopBgm, stopOverlay]);
 
   useEffect(() => {
     const unlock = () => {
@@ -124,7 +169,7 @@ export function useAudio(streak) {
       loadBuffer("correct");
       loadBuffer("wrong");
       if (!isMutedRef.current) {
-        startBgm(bgmKeyRef.current);
+        syncBgm(tierRef.current);
       }
     };
 
@@ -135,13 +180,13 @@ export function useAudio(streak) {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
     };
-  }, [ensureContext, loadBuffer, startBgm]);
+  }, [ensureContext, loadBuffer, syncBgm]);
 
   useEffect(() => {
     if (unlockedRef.current && !isMuted) {
-      startBgm(bgmKey);
+      syncBgm(tier);
     }
-  }, [bgmKey, isMuted, startBgm]);
+  }, [tier, isMuted, syncBgm]);
 
   useEffect(() => {
     const ctx = ctxRef.current;
@@ -153,16 +198,13 @@ export function useAudio(streak) {
 
   useEffect(() => {
     return () => {
-      if (bgmSourceRef.current) {
-        try {
-          bgmSourceRef.current.stop();
-        } catch {}
-      }
+      stopBgm();
+      stopOverlay();
       if (ctxRef.current) {
         ctxRef.current.close().catch(() => {});
       }
     };
-  }, []);
+  }, [stopBgm, stopOverlay]);
 
   const playSfx = useCallback(async (key) => {
     if (isMutedRef.current) return;
@@ -180,33 +222,34 @@ export function useAudio(streak) {
 
   const toggleMute = useCallback(() => {
     unlockedRef.current = true;
-    setIsMuted(prev => {
-      const next = !prev;
-      localStorage.setItem("vocab_muted", String(next));
-      if (!next) {
-        ensureContext();
-        setTimeout(() => startBgm(bgmKeyRef.current), 0);
-      }
-      return next;
-    });
-  }, [ensureContext, startBgm]);
+    const next = !isMutedRef.current;
+    isMutedRef.current = next;
+    setIsMuted(next);
+    localStorage.setItem("vocab_muted", String(next));
+    if (!next) {
+      ensureContext();
+      syncBgm(tierRef.current);
+    }
+  }, [ensureContext, syncBgm]);
 
   const setVolume = useCallback((nextVal) => {
     const clamped = Math.max(0, Math.min(1, Number(nextVal)));
     unlockedRef.current = true;
+    volumeRef.current = clamped;
     setVolumeState(clamped);
     localStorage.setItem("vocab_volume", String(clamped));
     if (clamped === 0) {
+      isMutedRef.current = true;
       setIsMuted(true);
       localStorage.setItem("vocab_muted", "true");
     } else if (isMutedRef.current) {
+      isMutedRef.current = false;
       setIsMuted(false);
       localStorage.setItem("vocab_muted", "false");
       ensureContext();
-      setTimeout(() => startBgm(bgmKeyRef.current), 0);
+      syncBgm(tierRef.current);
     }
-  }, [ensureContext, startBgm]);
+  }, [ensureContext, syncBgm]);
 
   return { isMuted, toggleMute, volume, setVolume, playSfx };
 }
-
