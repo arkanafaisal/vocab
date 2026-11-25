@@ -17,6 +17,11 @@ import mysql from 'mysql2/promise'
 // })
 
 // Konfigurasi Cloud (TiDB Cloud):
-const db = mysql.createPool(process.env.DB_URI);
+const db = mysql.createPool({
+  uri: process.env.DB_URI,
+  enableKeepAlive: true,
+  keepAliveInitialDelay: 10000,
+  idleTimeout: 60000
+});
 
 export default db;
