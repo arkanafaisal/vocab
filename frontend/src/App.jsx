@@ -5,12 +5,15 @@ import { useQuizActions } from './hooks/useQuizActions.js';
 import { useLeaderboard } from './hooks/useLeaderboard.js';
 import { useToast } from './hooks/useToast';
 import { useLogoutCleanup } from './hooks/useLogoutCleanup';
+import { useAudio } from './hooks/useAudio';
+import { useIdleFade } from './hooks/useIdleFade';
 
 import { Navbar } from './component/Navbar';
 import { QuizSection } from './component/QuizSection';
 import { LeaderboardSection } from './component/LeaderboardSection';
 import { Modals } from './component/Modals.jsx';
 import { ParticleCanvas } from './component/ParticleCanvas';
+import { Icons } from './component/Icons';
 
 import { api } from './services/api.js';
 import { API_BASE_URL } from './services/fetchData.js';
@@ -52,6 +55,10 @@ export default function App() {
   const retryCountRef = useRef(0);
 
   const showToast = useToast(setToast)
+  const { isMuted, toggleMute, volume, setVolume, playSfx } = useAudio(streak);
+  const [showMobileVolume, setShowMobileVolume] = useState(false);
+  const mobileFullscreenFade = useIdleFade(2500);
+  const mobileSoundFade = useIdleFade(2500);
 
   const loadGuestMode = useCallback(async () => {
     const { state, question: nextQ } = await loadNextGuestQuestion(api.getGuestQuiz);
@@ -124,6 +131,7 @@ export default function App() {
       const res = quizUI.pendingResult;
       const isCorrect = res.correct;
 
+      playSfx(isCorrect ? 'correct' : 'wrong');
       setQuizUI(prev => ({ ...prev, isValidating: false, correctAnswerText: res.correctAnswer }));
 
       if (res.points_added && isCorrect) {
@@ -148,7 +156,7 @@ export default function App() {
         }, 300);
       }, 1000);
     }
-  }, [quizUI.animationFinished, quizUI.pendingResult, handleRequestQuestion]);
+  }, [quizUI.animationFinished, quizUI.pendingResult, handleRequestQuestion, playSfx]);
 
   const { handleAnswer } = useQuizActions({quizUI, setQuizUI, user, socketRef, question, onAnswerTimeout: handleLogoutCleanup})
 
@@ -226,6 +234,7 @@ export default function App() {
         user={user} streak={streak} isSocketConnected={isSocketConnected}
         view={view} setView={setView}
         setActiveModal={setActiveModal} toggleFullscreen={toggleFullscreen}
+        isMuted={isMuted} toggleMute={toggleMute} volume={volume} setVolume={setVolume}
       />
 
       {!user && guestUser && (
@@ -248,6 +257,47 @@ export default function App() {
           setActiveModal={setActiveModal}
         />
       </main>
+
+      <button
+        onClick={() => { mobileFullscreenFade.triggerActive(); toggleFullscreen(); }}
+        aria-label="Toggle Fullscreen"
+        className={`md:hidden fixed bottom-5 left-5 z-40 w-11 h-11 rounded-full bg-slate-800/90 border border-slate-600/80 text-slate-200 shadow-xl backdrop-blur-md flex items-center justify-center hover:bg-slate-700 active:scale-95 transition-all duration-500 ${mobileFullscreenFade.isActive ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}
+      >
+        <Icons.Fullscreen />
+      </button>
+
+      <div className={`md:hidden fixed bottom-5 right-5 z-40 flex flex-col items-center gap-2 transition-opacity duration-500 ${mobileSoundFade.isActive || showMobileVolume ? 'opacity-100' : 'opacity-40 hover:opacity-100'}`}>
+        {showMobileVolume && (
+          <div className="bg-slate-800/95 border border-slate-600/80 rounded-full py-3 px-2 shadow-xl backdrop-blur-md flex flex-col items-center gap-2 fade-in">
+            <div className="h-24 w-7 flex items-center justify-center">
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={isMuted ? 0 : volume}
+                onChange={(e) => { mobileSoundFade.triggerActive(); setVolume(parseFloat(e.target.value)); }}
+                aria-label="Volume"
+                className="w-24 -rotate-90 accent-indigo-500 cursor-pointer h-1.5"
+              />
+            </div>
+            <button
+              onClick={() => { mobileSoundFade.triggerActive(); toggleMute(); }}
+              aria-label={isMuted ? "Nyalakan Suara" : "Matikan Suara"}
+              className="p-1.5 rounded-full text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+            >
+              {isMuted || volume === 0 ? <Icons.VolumeOff /> : <Icons.VolumeOn />}
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => { mobileSoundFade.triggerActive(); setShowMobileVolume(v => !v); }}
+          aria-label="Pengaturan Suara"
+          className="w-11 h-11 rounded-full bg-slate-800/90 border border-slate-600/80 text-slate-200 shadow-xl backdrop-blur-md flex items-center justify-center hover:bg-slate-700 active:scale-95 transition-all"
+        >
+          {isMuted || volume === 0 ? <Icons.VolumeOff /> : <Icons.VolumeOn />}
+        </button>
+      </div>
     </div>
   );
 }
