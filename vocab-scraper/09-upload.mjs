@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
-const INPUT_JSON_PATH = path.join(DATA_DIR, '07-translated.json');
+const INPUT_JSON_PATH = path.join(DATA_DIR, '07-final.json');
 
 export const UPLOAD_CONFIG = {
   endpointUrl: process.env.VOCAB_INSERT_URL || 'http://localhost:3000/api/data/insert',
@@ -47,7 +47,7 @@ export function partitionBySchemaLength(items) {
 }
 
 /**
- * Menjalankan tahap 8: menyaring item yang melebihi batas panjang, menampilkan daftar
+ * Menjalankan tahap 9: menyaring item yang melebihi batas panjang, menampilkan daftar
  * yang di-exclude, lalu langsung mengirim item valid ke endpoint `/api/data/insert`.
  */
 export async function runUploadStep() {
@@ -56,22 +56,22 @@ export async function runUploadStep() {
   const items = Array.isArray(parsed) ? parsed : [];
 
   if (items.length === 0) {
-    console.log('[08-upload] Tidak ada data di data/07-translated.json.');
+    console.log('[09-upload] Tidak ada data di data/07-final.json.');
     return;
   }
 
   const { valid, excluded } = partitionBySchemaLength(items);
 
-  console.log(`[08-upload] Total input: ${items.length}, valid: ${valid.length}, di-exclude: ${excluded.length}`);
+  console.log(`[09-upload] Total input: ${items.length}, valid: ${valid.length}, di-exclude: ${excluded.length}`);
   if (excluded.length > 0) {
-    console.log('[08-upload] Daftar di-exclude (batas panjang):');
+    console.log('[09-upload] Daftar di-exclude (batas panjang):');
     for (const item of excluded) {
       console.log(`  - "${item.vocab}" -> "${item.meaning}" [${item.reason}]`);
     }
   }
 
   if (valid.length === 0) {
-    console.log('[08-upload] Tidak ada item valid untuk dikirim.');
+    console.log('[09-upload] Tidak ada item valid untuk dikirim.');
     return;
   }
 
@@ -95,12 +95,12 @@ export async function runUploadStep() {
     throw new Error(result.message || `HTTP ${response.status} saat upload ke ${UPLOAD_CONFIG.endpointUrl}`);
   }
 
-  console.log(`[08-upload] Selesai. Server response: ${result.message ?? 'OK'} (inserted: ${result.data ?? valid.length})`);
+  console.log(`[09-upload] Selesai. Server response: ${result.message ?? 'OK'} (inserted: ${result.data ?? valid.length})`);
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runUploadStep().catch((error) => {
-    console.error(`[08-upload] Gagal: ${error.message}`);
+    console.error(`[09-upload] Gagal: ${error.message}`);
     process.exitCode = 1;
   });
 }

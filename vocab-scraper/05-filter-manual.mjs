@@ -6,6 +6,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
 const INPUT_PATH = path.join(DATA_DIR, '04-normalized.txt');
 const OUTPUT_PATH = path.join(DATA_DIR, '05-filtered.txt');
+const MASTER_DATA_PATH = path.join(__dirname, 'data.txt');
+
+/**
+ * Membaca daftar kata yang sudah ada di `data.txt` untuk deduplikasi di akhir tahap 05.
+ * @returns {Promise<Set<string>>}
+ */
+async function loadMasterWordSet() {
+  try {
+    const content = await readFile(MASTER_DATA_PATH, 'utf8');
+    const words = content
+      .split(/[,\r\n]+/)
+      .map((item) => item.trim().toLowerCase())
+      .filter(Boolean);
+    return new Set(words);
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return new Set();
+    }
+    throw error;
+  }
+}
 
 /**
  * Memuat daftar kata pengecualian dari `manual-exclude.mjs`.
@@ -57,13 +78,16 @@ export async function runFilterManualStep() {
     .filter(Boolean);
 
   const excludeSet = await loadExcludeWordSet();
-  const finalWords = filterManualWords(words, excludeSet);
-  const excludedCount = words.length - finalWords.length;
+  const masterSet = await loadMasterWordSet();
+  const afterManual = filterManualWords(words, excludeSet);
+  const finalWords = afterManual.filter((word) => !masterSet.has(word.toLowerCase()));
+  const excludedCount = words.length - afterManual.length;
+  const duplicateCount = afterManual.length - finalWords.length;
 
   await writeFile(OUTPUT_PATH, finalWords.join(', '), 'utf8');
 
   console.log(
-    `[05-filter-manual] Selesai. Tersimpan ${finalWords.length} kata (dibuang ${excludedCount}) -> ${OUTPUT_PATH}`
+    `[05-filter-manual] Selesai. Tersimpan ${finalWords.length} kata baru (dibuang manual/panjang: ${excludedCount}, duplikat data.txt: ${duplicateCount}) -> ${OUTPUT_PATH}`
   );
   return finalWords;
 }

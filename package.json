@@ -7,10 +7,12 @@
     "start": "cd backend && npm start",
     "scrape": "node vocab-scraper/01-scrape.mjs && node vocab-scraper/02-clean-sort-dedupe.mjs && node vocab-scraper/03-filter-length.mjs",
     "normalize": "node vocab-scraper/04-normalize-forms.mjs",
-    "exclude": "node vocab-scraper/05-filter-manual.mjs",
-    "save": "node vocab-scraper/06-save.mjs",
-    "translate": "node vocab-scraper/07-translate.mjs",
-    "upload": "node vocab-scraper/08-upload.mjs"
+    "filter": "node vocab-scraper/05-filter-manual.mjs",
+    "translate": "node vocab-scraper/06-translate.mjs",
+    "loanword": "node vocab-scraper/07-filter-loanwords.mjs",
+    "save": "node vocab-scraper/08-save.mjs",
+    "upload": "node vocab-scraper/09-upload.mjs",
+    "all": "node vocab-scraper/run-master.mjs"
   },
   "engines": {
     "node": "22.x"

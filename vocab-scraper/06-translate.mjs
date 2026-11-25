@@ -1,11 +1,14 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import readline from 'node:readline/promises';
+import { stdin as input, stdout as output } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
-const INPUT_PATH = path.join(DATA_DIR, '06-final.txt');
-const OUTPUT_JSON_PATH = path.join(DATA_DIR, '07-translated.json');
+const INPUT_PATH = path.join(DATA_DIR, '05-filtered.txt');
+const MASTER_DATA_PATH = path.join(__dirname, 'data.txt');
+const OUTPUT_JSON_PATH = path.join(DATA_DIR, '06-translated.json');
 
 /**
  * Konfigurasi translate batch menggunakan pemisah `\n`.
@@ -165,20 +168,75 @@ async function translateBatch(batch) {
 }
 
 /**
- * Menjalankan tahap 7: membaca `data/06-final.txt`, menerjemahkan per batch `\n`,
- * dan menyimpan array objek `{ vocab, meaning }` ke `data/07-translated.json`.
+ * Membaca daftar kata dari file teks; jika file belum ada, mengembalikan array kosong.
+ * @param {string} filePath
+ * @returns {Promise<string[]>}
+ */
+async function readWordListIfExists(filePath) {
+  try {
+    const content = await readFile(filePath, 'utf8');
+    return content
+      .split(/[,\r\n]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+  } catch (error) {
+    if (error && error.code === 'ENOENT') {
+      return [];
+    }
+    throw error;
+  }
+}
+
+/**
+ * Menentukan sumber kata: utamakan `data/05-filtered.txt`, atau tawarkan ambil utuh dari `data.txt`
+ * jika `data/05-filtered.txt` tidak ada/kosong.
+ * @returns {Promise<string[]>}
+ */
+async function resolveInputWords() {
+  if (!process.argv.includes('--from-master')) {
+    const filteredWords = await readWordListIfExists(INPUT_PATH);
+    if (filteredWords.length > 0) {
+      return filteredWords;
+    }
+  }
+
+  const masterWords = await readWordListIfExists(MASTER_DATA_PATH);
+  if (masterWords.length === 0) {
+    console.log('[06-translate] Tidak ada kata di data/05-filtered.txt maupun data.txt.');
+    return [];
+  }
+
+  if (process.argv.includes('--from-master') || process.argv.includes('-y') || process.argv.includes('--yes')) {
+    console.log(`[06-translate] Mengambil ${masterWords.length} kata utuh dari data.txt.`);
+    return masterWords;
+  }
+
+  const rl = readline.createInterface({ input, output });
+  try {
+    const answer = await rl.question(
+      `[06-translate] data/05-filtered.txt tidak ada/kosong. Ambil seluruh kata dari data.txt (${masterWords.length} kata)? (y/n): `
+    );
+    if (['y', 'yes'].includes(answer.trim().toLowerCase())) {
+      return masterWords;
+    }
+    return [];
+  } finally {
+    rl.close();
+  }
+}
+
+/**
+ * Menjalankan tahap 6: membaca `data/05-filtered.txt` (atau `data.txt` utuh jika dipilih),
+ * menerjemahkan per batch `\n`, dan menyimpan array objek `{ vocab, meaning }` ke `data/06-translated.json`.
  * @returns {Promise<Array<{ vocab: string, meaning: string }>>}
  */
 export async function runTranslateStep() {
   await mkdir(DATA_DIR, { recursive: true });
-  const content = await readFile(INPUT_PATH, 'utf8');
-  const words = content
-    .split(/[,\r\n]+/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+  const words = await resolveInputWords();
 
   if (words.length === 0) {
-    console.log('[07-translate] Tidak ada kata baru di data/06-final.txt untuk diterjemahkan.');
+    console.log('[06-translate] Tidak ada kata untuk diterjemahkan.');
+    await writeFile(OUTPUT_JSON_PATH, '[]\n', 'utf8');
     return [];
   }
 
@@ -188,20 +246,20 @@ export async function runTranslateStep() {
   for (let i = 0; i < batches.length; i += 1) {
     const batchResult = await translateBatch(batches[i]);
     entries.push(...batchResult);
-    console.log(`[07-translate] Batch ${i + 1}/${batches.length} selesai (${batchResult.length} kata)`);
+    console.log(`[06-translate] Batch ${i + 1}/${batches.length} selesai (${batchResult.length} kata)`);
     if (i < batches.length - 1) {
       await sleep(TRANSLATE_CONFIG.delayMs);
     }
   }
 
   await writeFile(OUTPUT_JSON_PATH, `${JSON.stringify(entries, null, 2)}\n`, 'utf8');
-  console.log(`[07-translate] Selesai. Tersimpan ${entries.length} pasangan kata -> ${OUTPUT_JSON_PATH}`);
+  console.log(`[06-translate] Selesai. Tersimpan ${entries.length} pasangan kata -> ${OUTPUT_JSON_PATH}`);
   return entries;
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   runTranslateStep().catch((error) => {
-    console.error(`[07-translate] Gagal: ${error.message}`);
+    console.error(`[06-translate] Gagal: ${error.message}`);
     process.exitCode = 1;
   });
 }

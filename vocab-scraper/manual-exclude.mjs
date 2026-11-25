@@ -34,8 +34,9 @@ export const MANUAL_EXCLUDE_WORDS = [
   'walk', 'want', 'well', 'woman', 'work', 'world', 'wow', 'year', 'yes',
   'young',
   
-  'alway', 'anyth', 'ongo', 'qilin', 'rep', 'tens', 'themselve', 'tinge',
-  'downstair', 'inclin', 'upstair', ''
+  'alway', 'anyth', 'ongo', 'qilin', 'rep', 'tens', 'themselve',
+  'downstair', 'inclin', 'upstair', 'noth', 'trie', 'gent', 'someth',
+  'huuu', 'ceil', 'lightn', 'crie', 'saie', 'staie', ''
 ];
 
 /**
