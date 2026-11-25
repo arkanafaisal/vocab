@@ -5,10 +5,9 @@ import db from "../config/db.js"
 export async function insertData({datas}) {
     try {
         const flatValues = datas.map(data => [data.vocab, data.meaning]).flat();
-        const [{affectedRows}] = await db.query(`INSERT INTO data (vocab, meaning) VALUES ${datas.map(()=>'(?,?)').join(', ')}`, flatValues)
+        const [{affectedRows}] = await db.query(`INSERT IGNORE INTO data (vocab, meaning) VALUES ${datas.map(()=>'(?,?)').join(', ')}`, flatValues)
         return affectedRows
     } catch(err) {
-        if(err.code === "ER_DUP_ENTRY"){throw new Error(err.message)}
         throw err
     }
 }

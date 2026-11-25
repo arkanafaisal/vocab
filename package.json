@@ -4,7 +4,13 @@
   "description": "Root package for Heroku Deployment",
   "scripts": {
     "heroku-postbuild": "cd backend && npm install && cd ../frontend && npm install --include=dev && npm run build",
-    "start": "cd backend && npm start"
+    "start": "cd backend && npm start",
+    "scrape": "node vocab-scraper/01-scrape.mjs && node vocab-scraper/02-clean-sort-dedupe.mjs && node vocab-scraper/03-filter-length.mjs",
+    "normalize": "node vocab-scraper/04-normalize-forms.mjs",
+    "exclude": "node vocab-scraper/05-filter-manual.mjs",
+    "save": "node vocab-scraper/06-save.mjs",
+    "translate": "node vocab-scraper/07-translate.mjs",
+    "upload": "node vocab-scraper/08-upload.mjs"
   },
   "engines": {
     "node": "22.x"

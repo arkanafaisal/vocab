@@ -4,3 +4,5 @@
 **/.env
 
 **/logs/
+vocab-scraper/data/
+vocab-scraper/target.html
