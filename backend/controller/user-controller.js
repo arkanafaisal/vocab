@@ -154,8 +154,14 @@ userController.updateEmail = async (req, res) => {
 
 userController.getAllUsers = async (req, res) => {
     try {
+        const { ok, data: cachedUsers } = await redisHelper.get("cache", "leaderboard")
+        if (ok) {
+            return response(res, true, "retrieved all users", cachedUsers)
+        }
+
         const allUsers = await UserModel.getAllUsers()
-    
+        await redisHelper.set("cache", "leaderboard", allUsers)
+
         return response(res, true, "retrieved all users", allUsers)
     } catch(err) {
         console.log(err)
