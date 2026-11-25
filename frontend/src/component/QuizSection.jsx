@@ -38,6 +38,12 @@ function getChoiceBtnClass(choice, quizUI, streak) {
   const isSelected = quizUI.selectedAnswer === choice;
   const isCorrect = quizUI.correctAnswerText === choice;
 
+  if (quizUI.isTransitioning) {
+    if (streak >= 10) return base + "bg-slate-900 text-slate-300 border-slate-700 pointer-events-none ";
+    if (streak >= 5) return base + "bg-slate-900 text-slate-300 border-slate-700 card-fire-glow-orange pointer-events-none ";
+    return base + "bg-slate-900 text-slate-300 border-slate-700 pointer-events-none ";
+  }
+
   if (quizUI.selectedAnswer) {
     if (quizUI.isValidating) {
       if (isSelected) return "w-full py-3.5 px-5 rounded-2xl text-sm font-bold flex items-center justify-center min-h-[52px] text-center relative overflow-hidden bg-slate-900 text-white border-2 border-amber-500/50 shadow-md";
@@ -95,7 +101,7 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
 
   return (
     <div className={`flex-1 h-full flex-col ${isHidden}`}>
-      <div className={`w-full h-full flex items-center justify-center p-4 fade-in transition-all duration-300 ease-out ${quizUI.isTransitioning ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
+      <div className="w-full h-full flex items-center justify-center p-4 fade-in">
         <div className={cardClass}>
           <div className="bg-slate-900/50 border-b border-slate-700 px-4 py-4 flex items-center justify-between shrink-0 relative z-10 rounded-t-[22px]">
             <div className="flex-1 flex justify-start">{renderStreakBadge()}</div>
@@ -114,15 +120,15 @@ export function QuizSection({ view, streak, score, question, quizUI, floatingSco
           <div className="shrink overflow-y-auto custom-scrollbar flex flex-col justify-center relative z-10 min-h-0 rounded-b-[22px]">
             <div className="px-6 py-6 text-center">
               <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wide mb-2">Apa arti kata:</h2>
-              <h1 className="text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white">{question.vocab}</h1>
+              <h1 className={`text-3xl md:text-4xl font-black text-white break-words leading-tight drop-shadow-md tracking-tight text-transparent bg-clip-text bg-gradient-to-br from-indigo-200 to-white transition-opacity duration-300 ${quizUI.isTransitioning ? 'opacity-0' : 'opacity-100'}`}>{question.vocab}</h1>
             </div>
             <div className="px-6 pb-3">
               <div className="flex flex-col gap-3">
                 {question.choices.map((choice, i) => {
                   const isSelected = quizUI.selectedAnswer === choice;
                   return (
-                    <button key={i} disabled={!!quizUI.selectedAnswer} onClick={() => handleAnswer(choice)} className={getChoiceBtnClass(choice, quizUI, streak)}>
-                      <span className="relative z-10 break-words w-full">{choice}</span>
+                    <button key={i} disabled={!!quizUI.selectedAnswer || quizUI.isTransitioning} onClick={() => handleAnswer(choice)} className={getChoiceBtnClass(choice, quizUI, streak)}>
+                      <span className={`relative z-10 break-words w-full transition-opacity duration-300 ${quizUI.isTransitioning ? 'opacity-0' : 'opacity-100'}`}>{choice}</span>
                       {quizUI.isValidating && isSelected && <div className="absolute inset-0 bg-amber-500/20 animate-fill-bar origin-left z-0 opacity-100"></div>}
                     </button>
                   );
