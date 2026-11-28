@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
-    allowedHosts: ['react.arkanafaisal.my.id'],
+    allowedHosts: ['react.arkana.studio'],
   },
   plugins: [
     react({

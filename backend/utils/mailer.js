@@ -9,13 +9,13 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS
 }})
 
-const root = process.env.NODE_ENV === "development"? "http://localhost:3000" : "https://vocab.arkanafaisal.my.id"
+const root = process.env.NODE_ENV === "development"? "http://localhost:3000" : "https://vocab.arkana.studio"
 
 export const sendMail = {
     verifyEmail: async ({newEmail, token}) => {
         const link = `${root}/#verify-email?token=${token}`
         await transporter.sendMail({
-            from: 'vocab <no-reply@arkanafaisal.my.id>',
+            from: 'vocab <no-reply@arkana.studio>',
             to: newEmail,
             subject: 'Verify your email',
             text: `Verify email:\n${link}`,
@@ -25,7 +25,7 @@ export const sendMail = {
     resetPassword: async ({email, token}) => {
         const link = `${root}/#reset-password?token=${token}`
         await transporter.sendMail({
-            from: 'vocab <no-reply@arkanafaisal.my.id>',
+            from: 'vocab <no-reply@arkana.studio>',
             to: email,
             subject: 'Reset your password',
             text: `reset password:\n${link}`,

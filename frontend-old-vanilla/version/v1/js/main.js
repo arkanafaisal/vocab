@@ -401,7 +401,7 @@
 
 // async function startFetching(endpoint, method, body = null) {
 //     const developmentUrl = "http://127.0.0.1:3002/"
-//     const productionUrl = "https://vocab-server.arkanafaisal.my.id/"
+//     const productionUrl = "https://vocab-server.arkana.studio/"
 //     const url = productionUrl
 //     try {
 //         let options = {
